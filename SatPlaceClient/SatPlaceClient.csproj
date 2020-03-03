@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Models\" />
@@ -20,5 +21,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="*"/>
     <PackageReference Include="ReactiveUI" Version="*" />
     <PackageReference Include="SocketIOClient" Version="*"/>
+    <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="*"/>
+    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="*"/>
   </ItemGroup>
 </Project>

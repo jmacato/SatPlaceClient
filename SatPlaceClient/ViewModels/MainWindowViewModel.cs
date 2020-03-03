@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using ReactiveUI;
 using SocketIOClient;
 using SatPlaceClient.Models.Json;
+using System.Buffers;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -61,7 +62,9 @@ namespace SatPlaceClient.ViewModels
                 SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", res =>
                 {
                     var data = JsonConvert.DeserializeObject<PixelResult>(res.Text);
+                    
                     var base64raw = data.DataBase64.Replace("data:image/bmp;base64,", string.Empty);
+                    
                     var pngData = Convert.FromBase64String(base64raw);
 
                     var canvasPng = BigGustave.Png.Open(pngData);

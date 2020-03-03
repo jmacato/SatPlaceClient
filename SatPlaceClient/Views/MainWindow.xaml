@@ -11,15 +11,16 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
     <Window.Resources>
+        <converters:BooleanColorizerConverter x:Key="BooleanColorizerConverter" />
         <converters:PixelArrayToAvaloniaBitmapConverter x:Key="PixelArrayToAvaloniaBitmapConverter" />
     </Window.Resources>
     <Grid>
-        <Grid RowDefinitions="Auto,12,Auto,12,*,12">
-            <StackPanel Orientation="Horizontal" Spacing="20" Grid.Row="0">
-                <TextBlock Text="R - Reset"/>
-                <TextBlock Text="Mouse Wheel - Zoom to Point"/>
-                <TextBlock Text="Mouse Left Button Down - Pan"/>
-                <Button Content="{Binding OpenImageDialogText}" Command="{Binding OpenImageDialog}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid RowDefinitions="Auto,*">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" Grid.Row="0" Margin="5">
+                <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Width="24" Height="24" Margin="10">
+                    <Ellipse Fill="{Binding ConnectionReady, ConverterParameter=Crimson:Lime, Converter={StaticResource BooleanColorizerConverter}}" Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+                <Button Content="Refresh Canvas" Command="{Binding RefreshCanvas}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </StackPanel>
             <paz:ZoomBorder Name="zoomBorder" Stretch="None" ZoomSpeed="1.2" Background="SlateBlue" ClipToBounds="True" Focusable="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="1">
                 <i:Interaction.Behaviors>

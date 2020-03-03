@@ -14,6 +14,9 @@ namespace SatPlaceClient.Views
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
+#if DEBUG
+            this.AttachDevTools();
+#endif
         }
     }
 }

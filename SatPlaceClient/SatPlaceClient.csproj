@@ -22,6 +22,6 @@
     <PackageReference Include="ReactiveUI" Version="*" />
     <PackageReference Include="SocketIOClient" Version="*"/>
     <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="*"/>
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="*"/>
+    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="*"/>   
   </ItemGroup>
 </Project>

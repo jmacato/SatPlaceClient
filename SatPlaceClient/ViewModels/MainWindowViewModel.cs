@@ -10,18 +10,37 @@ using SocketIOClient;
 using SatPlaceClient.Models.Json;
 using System.Buffers;
 using SatPlaceClient.Models;
+using System.Threading.Tasks;
+using System.Reactive.Linq;
+using Polly;
+using SocketIOClient.Arguments;
 
 namespace SatPlaceClient.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        public string OpenImageDialogText { get; set; } = "Open Image";
 
-        public ReactiveCommand<Unit, Unit> OpenImageDialog { get; }
+        public MainWindowViewModel()
+        {
+            SatPlaceClient = new SocketIO("https://api.satoshis.place");
+
+            DoTryConnecting();
+
+            SetupHandlers();
+
+            var CanRefreshCanvas = this.WhenAnyValue(x => x.CanvasRefreshInProgress, x => x.ConnectionReady)
+                                       .Select(x => !x.Item1 & x.Item2)
+                                       .ObserveOn(RxApp.MainThreadScheduler);
+
+            RefreshCanvas = ReactiveCommand.CreateFromTask(DoRefreshCanvas, CanRefreshCanvas);
+        }
 
         private SocketIO SatPlaceClient { get; }
-
         private GenericPixel[] _latestCanvasBitmap;
+        private object lockObj = new object();
+        private bool _connectionReady;
+        private bool _canvasRefreshInProgress;
+        private byte RetryCounter;
 
         public GenericPixel[] LatestCanvasBitmap
         {
@@ -29,72 +48,89 @@ namespace SatPlaceClient.ViewModels
             set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
         }
 
-        private object _connectionReadyLock = new object();
-        private bool _connectionReady;
-
         public bool ConnectionReady
         {
             get
             {
-                lock (_connectionReadyLock)
+                lock (lockObj)
                     return _connectionReady;
             }
             set
             {
-                lock (_connectionReadyLock)
+                lock (lockObj)
                     this.RaiseAndSetIfChanged(ref _connectionReady, value, nameof(ConnectionReady));
             }
         }
 
-        public MainWindowViewModel()
+        public bool CanvasRefreshInProgress
         {
-            SatPlaceClient = new SocketIO("https://api.satoshis.place");
-
-            SetupHandlers();
-
-            OpenImageDialog = ReactiveCommand.CreateFromTask(async () =>
+            get
             {
-                if (ConnectionReady)
-                    await SatPlaceClient.EmitAsync("GET_LATEST_PIXELS", null);
-            });
+                lock (lockObj)
+                {
+                    return _canvasRefreshInProgress;
+                }
+            }
+
+            private set
+            {
+                lock (lockObj)
+                {
+                    this.RaiseAndSetIfChanged(ref _canvasRefreshInProgress, value, nameof(CanvasRefreshInProgress));
+                }
+            }
         }
 
-        private async void SetupHandlers()
-        {
-            await SatPlaceClient.ConnectAsync();
+        public ReactiveCommand<Unit, Unit> RefreshCanvas { get; }
 
-            SatPlaceClient.OnConnected += delegate
+        private async void DoTryConnecting()
+        {
+            try
+            {
+                await SatPlaceClient.ConnectAsync();
+            }
+            catch
+            {
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, RetryCounter)));
+                Console.WriteLine($"Connection Failed. Retry Count {RetryCounter}/6");
+                RetryCounter++;
+
+                if (RetryCounter <= 6)
+                {
+                    DoTryConnecting();
+                }
+                else
+                {
+                    Console.WriteLine($"Connection Failed. Please restart app to try again.");
+                }
+            }
+
+            RetryCounter = 0;
+        }
+
+        private async Task DoRefreshCanvas()
+        {
+            if (ConnectionReady & !CanvasRefreshInProgress)
+            {
+                CanvasRefreshInProgress = true;
+                await SatPlaceClient.EmitAsync("GET_LATEST_PIXELS", null);
+            }
+        }
+
+        private void SetupHandlers()
+        {
+            SatPlaceClient.OnConnected += async delegate
             {
                 ConnectionReady = true;
 
-                SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", res =>
-                {
-                    var data = JsonConvert.DeserializeObject<PixelResult>(res.Text);
-
-                    var base64raw = data.DataBase64.Replace("data:image/bmp;base64,", string.Empty);
-
-                    var pngData = Convert.FromBase64String(base64raw);
-
-                    var canvasPng = BigGustave.Png.Open(pngData);
-
-                    var canvasBitmap = new GenericPixel[1000 * 1000];
-
-                    for (int x = 0; x < canvasPng.Width; x++)
-                        for (int y = 0; y < canvasPng.Height; y++)
-                        {
-                            var i = x + canvasPng.Width * y;
-                            var pngPixel = canvasPng.GetPixel(x, y);
-                            var newPixel = new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A);
-                            canvasBitmap[i] = newPixel;
-                        }
-
-                    LatestCanvasBitmap = canvasBitmap;
-                });
+                SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", HandleLatestCanvasData);
 
                 SatPlaceClient.On("BROADCAST_STATS", res =>
                 {
                     Console.WriteLine(res.Text);
                 });
+
+                await DoRefreshCanvas();
             };
 
             SatPlaceClient.OnClosed += delegate
@@ -105,7 +141,35 @@ namespace SatPlaceClient.ViewModels
             SatPlaceClient.OnError += delegate
             {
                 ConnectionReady = false;
+
+                DoTryConnecting();
             };
+        }
+
+        private void HandleLatestCanvasData(ResponseArgs args)
+        {
+            var data = JsonConvert.DeserializeObject<PixelResult>(args.Text);
+
+            var base64raw = data.DataBase64.Replace("data:image/bmp;base64,", string.Empty);
+
+            var pngData = Convert.FromBase64String(base64raw);
+
+            var canvasPng = BigGustave.Png.Open(pngData);
+
+            var canvasBitmap = new GenericPixel[1000 * 1000];
+
+            for (int x = 0; x < 1000; x++)
+                for (int y = 0; y < 1000; y++)
+                {
+                    var i = x + 1000 * y;
+                    var pngPixel = canvasPng.GetPixel(x, y);
+                    var newPixel = new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A);
+                    canvasBitmap[i] = newPixel;
+                }
+
+            LatestCanvasBitmap = canvasBitmap;
+
+            CanvasRefreshInProgress = false;
         }
     }
 }

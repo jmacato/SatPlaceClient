@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reactive;
-using System.Text;
-using System.Text.Json.Serialization;
+using System.Reactive; 
 using Newtonsoft.Json;
 using ReactiveUI;
 using SocketIOClient;
@@ -12,7 +10,6 @@ using System.Buffers;
 using SatPlaceClient.Models;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
-using Polly;
 using SocketIOClient.Arguments;
 
 namespace SatPlaceClient.ViewModels
@@ -119,17 +116,12 @@ namespace SatPlaceClient.ViewModels
 
         private void SetupHandlers()
         {
+            SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", HandleLatestCanvasData);
+            SatPlaceClient.On("BROADCAST_STATS", HandleBroadcastHeartbeat);
+
             SatPlaceClient.OnConnected += async delegate
             {
                 ConnectionReady = true;
-
-                SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", HandleLatestCanvasData);
-
-                SatPlaceClient.On("BROADCAST_STATS", res =>
-                {
-                    Console.WriteLine(res.Text);
-                });
-
                 await DoRefreshCanvas();
             };
 
@@ -144,6 +136,11 @@ namespace SatPlaceClient.ViewModels
 
                 DoTryConnecting();
             };
+        }
+
+        private void HandleBroadcastHeartbeat(ResponseArgs args)
+        {
+
         }
 
         private void HandleLatestCanvasData(ResponseArgs args)

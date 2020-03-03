@@ -15,8 +15,12 @@ namespace SatPlaceClient.ViewModels
 
         public ReactiveCommand<Unit, Unit> OpenImageDialog { get; }
 
+        private SocketIO SatPlaceClient { get; }
+
         public MainWindowViewModel()
         {
+             SatPlaceClient = new SocketIO("https://api.satoshis.place"); 
+
             OpenImageDialog = ReactiveCommand.CreateFromTask(async () =>
             {
                 var client = new SocketIO("https://api.satoshis.place");
@@ -36,6 +40,8 @@ namespace SatPlaceClient.ViewModels
                     await client.EmitAsync("GET_LATEST_PIXELS", null);
 
                 };
+
+
 
                 await client.ConnectAsync();
             });

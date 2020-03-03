@@ -9,6 +9,7 @@ using ReactiveUI;
 using SocketIOClient;
 using SatPlaceClient.Models.Json;
 using System.Buffers;
+using SatPlaceClient.Models;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -19,6 +20,14 @@ namespace SatPlaceClient.ViewModels
         public ReactiveCommand<Unit, Unit> OpenImageDialog { get; }
 
         private SocketIO SatPlaceClient { get; }
+
+        private GenericPixel[] _latestCanvasBitmap;
+
+        public GenericPixel[] LatestCanvasBitmap
+        {
+            get => _latestCanvasBitmap;
+            set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
+        }
 
         private object _connectionReadyLock = new object();
         private bool _connectionReady;
@@ -43,7 +52,6 @@ namespace SatPlaceClient.ViewModels
 
             SetupHandlers();
 
-
             OpenImageDialog = ReactiveCommand.CreateFromTask(async () =>
             {
                 if (ConnectionReady)
@@ -62,15 +70,25 @@ namespace SatPlaceClient.ViewModels
                 SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", res =>
                 {
                     var data = JsonConvert.DeserializeObject<PixelResult>(res.Text);
-                    
+
                     var base64raw = data.DataBase64.Replace("data:image/bmp;base64,", string.Empty);
-                    
+
                     var pngData = Convert.FromBase64String(base64raw);
 
                     var canvasPng = BigGustave.Png.Open(pngData);
 
-                    
+                    var canvasBitmap = new GenericPixel[1000 * 1000];
 
+                    for (int x = 0; x < canvasPng.Width; x++)
+                        for (int y = 0; y < canvasPng.Height; y++)
+                        {
+                            var i = x + canvasPng.Width * y;
+                            var pngPixel = canvasPng.GetPixel(x, y);
+                            var newPixel = new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A);
+                            canvasBitmap[i] = newPixel;
+                        }
+
+                    LatestCanvasBitmap = canvasBitmap;
                 });
 
                 SatPlaceClient.On("BROADCAST_STATS", res =>

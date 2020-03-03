@@ -20,6 +20,5 @@
     <PackageReference Include="Newtonsoft.Json" Version="*"/>
     <PackageReference Include="SocketIOClient" Version="*"/>
     <PackageReference Include="ReactiveUI" Version="*" />
-    <ProjectReference Include="../Submodules/BigGustave/src/BigGustave.csproj"/>
   </ItemGroup>
 </Project>

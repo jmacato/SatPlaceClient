@@ -18,7 +18,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="0.9.*" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.*" />
     <PackageReference Include="Newtonsoft.Json" Version="*"/>
-    <PackageReference Include="SocketIOClient" Version="*"/>
     <PackageReference Include="ReactiveUI" Version="*" />
+    <PackageReference Include="SocketIOClient" Version="*"/>
   </ItemGroup>
 </Project>

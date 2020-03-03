@@ -20,7 +20,8 @@
                 <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Width="24" Height="24" Margin="10">
                     <Ellipse Fill="{Binding ConnectionReady, ConverterParameter=Crimson:Lime, Converter={StaticResource BooleanColorizerConverter}}" Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Border>
-                <Button Content="Refresh Canvas" Command="{Binding RefreshCanvas}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Content="Reconnect" Command="{Binding ReconnectCommand}"  IsVisible="{Binding EnableReconnection}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Content="Refresh Canvas" Command="{Binding RefreshCanvasCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </StackPanel>
             <paz:ZoomBorder Name="zoomBorder" Stretch="None" ZoomSpeed="1.2" Background="SlateBlue" ClipToBounds="True" Focusable="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="1">
                 <i:Interaction.Behaviors>

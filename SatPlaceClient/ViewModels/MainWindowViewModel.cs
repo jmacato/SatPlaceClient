@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reactive; 
+using System.Reactive;
 using Newtonsoft.Json;
 using ReactiveUI;
 using SocketIOClient;
@@ -16,7 +16,6 @@ namespace SatPlaceClient.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-
         public MainWindowViewModel()
         {
             SatPlaceClient = new SocketIO("https://api.satoshis.place");
@@ -29,7 +28,9 @@ namespace SatPlaceClient.ViewModels
                                        .Select(x => !x.Item1 & x.Item2)
                                        .ObserveOn(RxApp.MainThreadScheduler);
 
-            RefreshCanvas = ReactiveCommand.CreateFromTask(DoRefreshCanvas, CanRefreshCanvas);
+            RefreshCanvasCommand = ReactiveCommand.CreateFromTask(DoRefreshCanvasAsync, CanRefreshCanvas);
+
+            ReconnectCommand = ReactiveCommand.Create(DoTryConnecting);
         }
 
         private SocketIO SatPlaceClient { get; }
@@ -38,7 +39,11 @@ namespace SatPlaceClient.ViewModels
         private bool _connectionReady;
         private bool _canvasRefreshInProgress;
         private byte RetryCounter;
+        private bool _EnableReconnection;
 
+        /// <summary>
+        /// Stores the latest bitmap data of satoshis.place's canvas.
+        /// </summary>
         public GenericPixel[] LatestCanvasBitmap
         {
             get => _latestCanvasBitmap;
@@ -78,7 +83,14 @@ namespace SatPlaceClient.ViewModels
             }
         }
 
-        public ReactiveCommand<Unit, Unit> RefreshCanvas { get; }
+        public bool EnableReconnection
+        {
+            get => _EnableReconnection;
+            private set => this.RaiseAndSetIfChanged(ref _EnableReconnection, value, nameof(EnableReconnection));
+        }
+
+        public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
+        public ReactiveCommand<Unit, Unit> ReconnectCommand { get; }
 
         private async void DoTryConnecting()
         {
@@ -99,43 +111,63 @@ namespace SatPlaceClient.ViewModels
                 else
                 {
                     Console.WriteLine($"Connection Failed. Please restart app to try again.");
+                    EnableReconnection = true;
                 }
             }
 
             RetryCounter = 0;
         }
 
-        private async Task DoRefreshCanvas()
+        private async Task DoRefreshCanvasAsync()
         {
             if (ConnectionReady & !CanvasRefreshInProgress)
             {
                 CanvasRefreshInProgress = true;
                 await SatPlaceClient.EmitAsync("GET_LATEST_PIXELS", null);
+                await SatPlaceClient.EmitAsync("GET_SETTINGS", null);
+            }
+        }
+
+        private async Task GetSettingsAsync()
+        {
+            if (ConnectionReady)
+            {
+                CanvasRefreshInProgress = true;
+                await SatPlaceClient.EmitAsync("GET_SETTINGS_RESULT", null);
             }
         }
 
         private void SetupHandlers()
         {
             SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", HandleLatestCanvasData);
+            SatPlaceClient.On("GET_SETTINGS_RESULT", HandleGetSettingsResult);
             SatPlaceClient.On("BROADCAST_STATS", HandleBroadcastHeartbeat);
 
             SatPlaceClient.OnConnected += async delegate
             {
                 ConnectionReady = true;
-                await DoRefreshCanvas();
+                await DoRefreshCanvasAsync();
+                EnableReconnection = false;
             };
 
             SatPlaceClient.OnClosed += delegate
             {
                 ConnectionReady = false;
+                EnableReconnection = true;
             };
 
             SatPlaceClient.OnError += delegate
             {
                 ConnectionReady = false;
-
+                EnableReconnection = true;
                 DoTryConnecting();
             };
+        }
+
+        private void HandleGetSettingsResult(ResponseArgs args)
+        {
+            var raw1 = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);
+            var result = new SettingsResult(raw1.RawData);
         }
 
         private void HandleBroadcastHeartbeat(ResponseArgs args)
@@ -145,9 +177,9 @@ namespace SatPlaceClient.ViewModels
 
         private void HandleLatestCanvasData(ResponseArgs args)
         {
-            var data = JsonConvert.DeserializeObject<PixelResult>(args.Text);
+            var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text);
 
-            var base64raw = data.DataBase64.Replace("data:image/bmp;base64,", string.Empty);
+            var base64raw = result.Data.Replace("data:image/bmp;base64,", string.Empty);
 
             var pngData = Convert.FromBase64String(base64raw);
 

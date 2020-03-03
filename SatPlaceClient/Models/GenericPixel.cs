@@ -8,7 +8,7 @@ using ReactiveUI;
 namespace SatPlaceClient.Models
 {
     [StructLayout(LayoutKind.Explicit)]
-    public readonly struct GenericPixel
+    public readonly struct GenericPixel 
     {
         [FieldOffset(0)]
         public readonly byte B;
@@ -37,5 +37,6 @@ namespace SatPlaceClient.Models
             this.G = g;
             this.B = b;
         }
+ 
     }
 }

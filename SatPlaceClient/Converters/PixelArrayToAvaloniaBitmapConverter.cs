@@ -24,7 +24,7 @@ namespace SatPlaceClient.Converters
                     unsafe
                     {
                         var TotalCanvasBytes = bitmap.Width * bitmap.Height * sizeof(GenericColor);
-                        fixed (void* src = &bitmap.Colors[0])
+                        fixed (void* src = &bitmap.Pixels[0])
                             Buffer.MemoryCopy(src, lockedBitmap.Address.ToPointer(), TotalCanvasBytes, TotalCanvasBytes);
                     }
                 }

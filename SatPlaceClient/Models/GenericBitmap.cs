@@ -4,13 +4,13 @@ namespace SatPlaceClient.Models
     {
         public readonly int Width;
         public readonly int Height;
-        public readonly GenericColor[] Colors;
+        public readonly GenericColor[] Pixels;
 
-        public GenericBitmap(int width, int height, GenericColor[] colors)
+        public GenericBitmap(int width, int height, GenericColor[] pixels)
         {
             Width = width;
             Height = height;
-            Colors = colors;
+            Pixels = pixels;
         }
     }
 }

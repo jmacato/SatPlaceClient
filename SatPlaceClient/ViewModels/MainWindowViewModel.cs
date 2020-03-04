@@ -153,21 +153,26 @@ namespace SatPlaceClient.ViewModels
 
             var allColors = new List<GenericColor>();
 
-            int i = 0;
+            int u = 0;
 
             var background = GenericColor.FromVector(Vector4.One);
+            var newTargetImage = new GenericBitmap(target.Width, target.Height, new GenericColor[totalPixelCount]);
 
             // Tally all colors and flatten transparencies.
             for (int x = 0; x < target.Width; x++)
                 for (int y = 0; y < target.Height; y++)
                 {
+                    var i = x + target.Width * y;
+
                     var pngPixel = target.GetPixel(x, y);
                     var blendedPixel = background.AlphaBlend(new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
                     if (!allColors.Contains(blendedPixel, new GenericColorComparer()))
                     {
                         allColors.Add(blendedPixel);
-                        i++;
+                        u++;
                     }
+
+                    newTargetImage.Pixels[i] = blendedPixel;
                 }
 
             var imageLabColors = new List<Lab>(allColors.Count);
@@ -205,9 +210,7 @@ namespace SatPlaceClient.ViewModels
                 colorReplacements.TryAdd(targetColorRgb, closestColorRgb);
             }
 
-            var k = PngBuilder.Create(target.Width, target.Height, false);
-
-
+            
         }
 
         private async void DoTryConnecting()
@@ -294,7 +297,7 @@ namespace SatPlaceClient.ViewModels
 
         private void HandleBroadcastHeartbeat(ResponseArgs args)
         {
-            //var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text.Trim());
+            var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text.Trim());
 
         }
 
@@ -302,7 +305,7 @@ namespace SatPlaceClient.ViewModels
         {
             var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text);
 
-            var base64raw = result.Data.Replace("data:image/bmp;base64,", string.Empty);
+            var base64raw = (result.Data as string).Replace("data:image/bmp;base64,", string.Empty);
 
             var pngData = Convert.FromBase64String(base64raw);
 

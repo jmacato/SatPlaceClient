@@ -4,7 +4,6 @@ namespace SatPlaceClient.ImageProcessing.Conversions
 {
     internal static class XyzConverter
     {
-        #region Constants/Helper methods for Xyz related spaces
         internal static IXyz WhiteReference { get; private set; } // TODO: Hard-coded!
         internal const double Epsilon = 0.008856; // Intent is 216/24389
         internal const double Kappa = 903.3; // Intent is 24389/27
@@ -22,7 +21,6 @@ namespace SatPlaceClient.ImageProcessing.Conversions
         {
             return Math.Pow(n, 1.0 / 3.0);
         }
-        #endregion
 
         internal static void ToColorSpace(IRgb color, IXyz item)
         {

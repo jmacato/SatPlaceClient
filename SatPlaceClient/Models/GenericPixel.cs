@@ -57,5 +57,17 @@ namespace SatPlaceClient.Models
 
             return new Vector4(nR, nG, nB, nA);
         }
+
+        public GenericPixel AlphaBlend(GenericPixel ForegroundPixel)
+        {
+            var normB = this.ToVector();
+            var normF = ForegroundPixel.ToVector();
+
+            var oX = (normF.X * normF.W) + (normB.X * (1.0f - normF.W));
+            var oY = (normF.Y * normF.W) + (normB.Y * (1.0f - normF.W));
+            var oZ = (normF.Z * normF.W) + (normB.Z * (1.0f - normF.W));
+
+            return GenericPixel.FromVector(new Vector4(oX, oY, oZ, 1));
+        }
     }
 }

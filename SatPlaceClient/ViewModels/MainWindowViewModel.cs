@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reactive;
 using Newtonsoft.Json;
 using ReactiveUI;
@@ -10,6 +11,8 @@ using SatPlaceClient.Models;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 using SocketIOClient.Arguments;
+using System.Buffers;
+using System.Numerics;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -71,10 +74,41 @@ namespace SatPlaceClient.ViewModels
         private void DoImageProcessing(string path)
         {
             var target = BigGustave.Png.Open(path);
+            var targetPixelCount = target.Width * target.Height;
 
-            if (target.Width * target.Height > 250_000)
+            if (targetPixelCount > 250_000)
                 throw new Exception("Picture size exceeds the allowed dimensions. Make sure that the image only contains 250,000 pixels or is under 500x500.");
-        
+
+            var allColors = new List<GenericPixel>();
+            
+            int i = 0;
+
+            var background = GenericPixel.FromVector(Vector4.One);
+
+            for (int x = 0; x < target.Width; x++)
+                for (int y = 0; y < target.Height; y++)
+                {
+                    var pngPixel = target.GetPixel(x, y);
+                    var blendedPixel = background.AlphaBlend(new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
+                    if (!allColors.Contains(blendedPixel))
+                    {
+                        allColors.Add(blendedPixel);
+                        i++;
+                    }
+                }
+
+
+            var imageLabColors = new List<Vector4>(allColors.Count);
+            var allowedLabColors = new List<Vector4>(allColors.Count);
+            
+            foreach(var color in allColors)
+            {
+                var k = ImageProcessing.ColorSpaceConversion.RGBToLab(color.ToVector());
+                imageLabColors.Add(k);
+            }
+
+
+
         }
 
         private SocketIO SatPlaceClient { get; }
@@ -131,6 +165,7 @@ namespace SatPlaceClient.ViewModels
 
         public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
         public ReactiveCommand<Unit, Unit> ReconnectCommand { get; }
+        public SettingsResult Settings { get; private set; }
 
         private async void DoTryConnecting()
         {
@@ -211,7 +246,7 @@ namespace SatPlaceClient.ViewModels
         private void HandleGetSettingsResult(ResponseArgs args)
         {
             var raw1 = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);
-            var result = new SettingsResult(raw1.RawData);
+            Settings = new SettingsResult(raw1.RawData);
         }
 
         private void HandleBroadcastHeartbeat(ResponseArgs args)

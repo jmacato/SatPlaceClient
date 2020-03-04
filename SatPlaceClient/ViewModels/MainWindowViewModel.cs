@@ -35,7 +35,6 @@ namespace SatPlaceClient.ViewModels
 
         private SocketIO SatPlaceClient { get; }
         private GenericPixel[] _latestCanvasBitmap;
-        private object lockObj = new object();
         private bool _connectionReady;
         private bool _canvasRefreshInProgress;
         private byte RetryCounter;
@@ -47,40 +46,19 @@ namespace SatPlaceClient.ViewModels
         public GenericPixel[] LatestCanvasBitmap
         {
             get => _latestCanvasBitmap;
-            set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
+            private set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
         }
 
         public bool ConnectionReady
         {
-            get
-            {
-                lock (lockObj)
-                    return _connectionReady;
-            }
-            set
-            {
-                lock (lockObj)
-                    this.RaiseAndSetIfChanged(ref _connectionReady, value, nameof(ConnectionReady));
-            }
+            get => _connectionReady;
+            private set => this.RaiseAndSetIfChanged(ref _connectionReady, value, nameof(ConnectionReady));
         }
 
         public bool CanvasRefreshInProgress
         {
-            get
-            {
-                lock (lockObj)
-                {
-                    return _canvasRefreshInProgress;
-                }
-            }
-
-            private set
-            {
-                lock (lockObj)
-                {
-                    this.RaiseAndSetIfChanged(ref _canvasRefreshInProgress, value, nameof(CanvasRefreshInProgress));
-                }
-            }
+            get => _canvasRefreshInProgress;
+            private set => this.RaiseAndSetIfChanged(ref _canvasRefreshInProgress, value, nameof(CanvasRefreshInProgress));
         }
 
         public bool EnableReconnection
@@ -167,7 +145,7 @@ namespace SatPlaceClient.ViewModels
             RetryCounter = 0;
             DoTryConnecting();
         }
-        
+
         private void HandleGetSettingsResult(ResponseArgs args)
         {
             var raw1 = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);

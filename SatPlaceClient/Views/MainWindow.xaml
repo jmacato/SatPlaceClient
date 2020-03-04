@@ -23,7 +23,7 @@
                 </Border>
                 <Button Content="Reconnect" Command="{Binding ReconnectCommand}" IsVisible="{Binding EnableReconnection}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Content="Refresh Canvas" Command="{Binding RefreshCanvasCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button Content="Open Image To Upload" IsVisible="{Binding ConnectionReady}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Button Content="Upload Image" IsEnabled="{Binding OrderSettings, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <i:Interaction.Behaviors>
                         <behaviors:OpenDialogSingleFileOutBehavior TargetFilePath="{Binding TargetImageFile}" />
                     </i:Interaction.Behaviors>

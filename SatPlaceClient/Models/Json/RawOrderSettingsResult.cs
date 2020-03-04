@@ -1,8 +1,8 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace SatPlaceClient.Models.Json
 {
-    public class RawSettingsResult
+    public class RawOrderSettingsResult
     {
         [JsonProperty("boardLength")]
         public uint BoardLength { get; set; }

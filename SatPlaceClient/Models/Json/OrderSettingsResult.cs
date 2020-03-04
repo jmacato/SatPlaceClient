@@ -2,14 +2,14 @@
 
 namespace SatPlaceClient.Models.Json
 {
-    public class SettingsResult
+    public class OrderSettingsResult
     {
-        public SettingsResult(RawSettingsResult res)
+        public OrderSettingsResult(RawOrderSettingsResult res)
         {
             BoardLength = res.BoardLength;
             InvoiceExpiry = res.InvoiceExpiry;
-            OrderPixelsLimit = OrderPixelsLimit;
-            PricePerPixel = PricePerPixel;
+            OrderPixelsLimit = res.OrderPixelsLimit;
+            PricePerPixel = res.PricePerPixel;
 
             var genPixs = new GenericColor[res.Colors.Length];
 

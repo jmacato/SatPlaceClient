@@ -4,6 +4,7 @@ using System.Reactive.Disposables;
 using System.Runtime.InteropServices;
 using System.Text;
 using ReactiveUI;
+using SatPlaceClient.ImageProcessing;
 
 namespace SatPlaceClient.Models
 {
@@ -38,16 +39,25 @@ namespace SatPlaceClient.Models
             this.B = b;
         }
 
-        public static GenericColor FromVector(Vector4 rgba)
+        public GenericColor(IColorSpace color)
+        {
+            var conv = color.ToRgb();
+            this.A = byte.MaxValue;
+            this.R = (byte)conv.R;
+            this.G = (byte)conv.G;
+            this.B = (byte)conv.B;
+        }
+
+        public static GenericColor FromVector4(Vector4 rgba)
         {
             var nR = (byte)(rgba.X * byte.MaxValue);
             var nG = (byte)(rgba.Y * byte.MaxValue);
             var nB = (byte)(rgba.Z * byte.MaxValue);
             var nA = (byte)(rgba.W * byte.MaxValue);
-            return new GenericColor(nA, nR, nG, nB);
+            return new GenericColor(nR, nG, nB, nA);
         }
 
-        public Vector4 ToVector()
+        public Vector4 ToVector4()
         {
             var nR = (R / 255f);
             var nG = (G / 255f);
@@ -59,14 +69,17 @@ namespace SatPlaceClient.Models
 
         public GenericColor AlphaBlend(GenericColor ForegroundPixel)
         {
-            var normB = this.ToVector();
-            var normF = ForegroundPixel.ToVector();
+            var normB = this.ToVector4();
+            var normF = ForegroundPixel.ToVector4();
 
-            var oX = (normF.X * normF.W) + (normB.X * (1.0f - normF.W));
-            var oY = (normF.Y * normF.W) + (normB.Y * (1.0f - normF.W));
-            var oZ = (normF.Z * normF.W) + (normB.Z * (1.0f - normF.W));
+            var alpha = normF.W;
+            var oneminusalpha = 1 - alpha;
 
-            return GenericColor.FromVector(new Vector4(oX, oY, oZ, 1));
+            var oX = ((normF.X * alpha) + (oneminusalpha * normB.X));
+            var oY = ((normF.Y * alpha) + (oneminusalpha * normB.Y));
+            var oZ = ((normF.Z * alpha) + (oneminusalpha * normB.Z));
+
+            return GenericColor.FromVector4(new Vector4(oX, oY, oZ, 1));
         }
     }
 }

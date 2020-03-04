@@ -39,7 +39,7 @@ namespace SatPlaceClient.ViewModels
 
             this.WhenAnyValue(x => x.TargetImageFile)
                 .Where(x => x != null)
-                .Delay(TimeSpan.FromSeconds(0.1)) //Decouple from the dialog async thread
+                .ObserveOn(RxApp.TaskpoolScheduler)
                 .Subscribe(ImageFileOpened);
         }
 
@@ -146,71 +146,74 @@ namespace SatPlaceClient.ViewModels
         private void DoImageProcessing(string path)
         {
             var target = BigGustave.Png.Open(path);
-            var totalPixelCount = target.Width * target.Height;
-            var limitAxis = Math.Round(Math.Sqrt(OrderSettings.OrderPixelsLimit)); 
+            var tW = target.Width;
+            var tH = target.Height;
+            var totalPixelCount = tW * tH;
+            var limitAxis = Math.Round(Math.Sqrt(OrderSettings.OrderPixelsLimit));
+
             if (totalPixelCount > OrderSettings.OrderPixelsLimit)
                 throw new Exception($"Picture size exceeds the allowed dimensions. Make sure that the image only contains {OrderSettings.OrderPixelsLimit:###,###,###} pixels or is under {limitAxis}x{limitAxis} pixels.");
 
-            var allColors = new List<GenericColor>();
+            var background = GenericColor.FromVector4(Vector4.One);
 
-            int u = 0;
+            var newTargetImage = new GenericBitmap(tW, tH, new GenericColor[totalPixelCount]);
 
-            var background = GenericColor.FromVector(Vector4.One);
-            var newTargetImage = new GenericBitmap(target.Width, target.Height, new GenericColor[totalPixelCount]);
-
-            // Tally all colors and flatten transparencies.
-            for (int x = 0; x < target.Width; x++)
-                for (int y = 0; y < target.Height; y++)
-                {
-                    var i = x + target.Width * y;
-
-                    var pngPixel = target.GetPixel(x, y);
-                    var blendedPixel = background.AlphaBlend(new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
-                    if (!allColors.Contains(blendedPixel, new GenericColorComparer()))
-                    {
-                        allColors.Add(blendedPixel);
-                        u++;
-                    }
-
-                    newTargetImage.Pixels[i] = blendedPixel;
-                }
-
-            var imageLabColors = new List<Lab>(allColors.Count);
-            var allowedLabColors = new List<Lab>(OrderSettings.Colors.Length);
-
-            // Convert RGB colors to LAB for perceptually-accurate comparison later
-            foreach (var color in allColors)
-            {
-                var lab = new Rgb(color.R, color.G, color.B).To<Lab>();
-                imageLabColors.Add(lab);
-            }
+            var allowedPaletteLab = new List<Rgb>(OrderSettings.Colors.Length);
 
             foreach (var color in OrderSettings.Colors)
             {
-                var lab = new Rgb(color.R, color.G, color.B).To<Lab>();
-                allowedLabColors.Add(lab);
+                var lab = new Rgb(color.R, color.G, color.B);
+                allowedPaletteLab.Add(lab);
             }
 
-            // Use CIEDE2000 color perception delta to get the closest color match
-            // of the targeted color in the original image into the allowed color pallette.
+            var nearestColorCmp = new ImageProcessing.Comparisons.CieDe2000Comparison();
 
-            var delta2000 = new ImageProcessing.Comparisons.CieDe2000Comparison();
-            var colorReplacements = new Dictionary<GenericColor, GenericColor>();
+            for (int y = 0; y < tH; y++)
+                for (int x = 0; x < tW; x++)
+                {
+                    var i = x + tW * y;
 
-            foreach (var color in imageLabColors)
-            {
-                var closestColorLab = allowedLabColors.Select(match => (match, delta2000.Compare(color, match)))
-                                                   .MinBy(x => x.Item2);
+                    var pngPixel = target.GetPixel(x, y);
 
-                var v1 = color.ToRgb();
-                var v2 = closestColorLab.match.ToRgb();
-                var targetColorRgb = new GenericColor((byte)v1.R, (byte)v1.G, (byte)v1.B, byte.MaxValue);
-                var closestColorRgb = new GenericColor((byte)v2.R, (byte)v2.G, (byte)v2.B, byte.MaxValue);
+                    // Blend pixel to opaque white.
+                    var orig = new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, byte.MaxValue);
+                    var blendedPixelRgb = background.AlphaBlend(orig);
 
-                colorReplacements.TryAdd(targetColorRgb, closestColorRgb);
-            }
+                    var blendedPixelLab = new Rgb(blendedPixelRgb.R, blendedPixelRgb.G, blendedPixelRgb.B);
 
-            
+                    // Use CIEDE2000 color perception delta to get the closest color match
+                    var closestColorLab = allowedPaletteLab.Select(match => (match, nearestColorCmp.Compare(blendedPixelLab, match))).MinBy(x => x.Item2);
+
+                    var closestColorRgbX = closestColorLab.match.ToRgb();
+
+                    newTargetImage.Pixels[i] = new GenericColor(closestColorRgbX);
+                }
+
+            LatestCanvasBitmap = newTargetImage;
+        }
+
+        private double AdobeLumaColorCompare(IColorSpace c1, IColorSpace c2)
+        {
+            var rgb1 = c1.ToRgb();
+            var rgb2 = c2.ToRgb();
+
+            double luma1 = (rgb1.R * 299 + rgb1.G * 587 + rgb1.B * 114) / (255.0 * 1000);
+            double luma2 = (rgb2.R * 299 + rgb2.G * 587 + rgb2.B * 114) / (255.0 * 1000);
+            double lumadiff = luma1 - luma2;
+            double diffR = (rgb1.R - rgb2.R) / 255.0, diffG = (rgb1.G - rgb2.G) / 255.0, diffB = (rgb1.B - rgb2.B) / 255.0;
+            return (diffR * diffR * 0.299 + diffG * diffG * 0.587 + diffB * diffB * 0.114) * 0.75
+                 + lumadiff * lumadiff;
+        }
+        private double CompuPhaseColorCompare(IColorSpace c1, IColorSpace c2)
+        {
+            var rgb1 = c1.ToRgb();
+            var rgb2 = c2.ToRgb();
+
+            long rmean = ((long)rgb1.R + (long)rgb2.R) / 2;
+            long r = (long)rgb1.R - (long)rgb2.R;
+            long g = (long)rgb1.G - (long)rgb2.G;
+            long b = (long)rgb1.B - (long)rgb2.B;
+            return Math.Sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8));
         }
 
         private async void DoTryConnecting()

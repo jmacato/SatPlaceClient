@@ -34,7 +34,7 @@
                     <behaviors:PanAndZoomBehavior />
                 </i:Interaction.Behaviors>
                 <Canvas Background="LightGray" Width="1000" Height="1000" RenderOptions.BitmapInterpolationMode="Default">
-                    <Image Canvas.Left="0" Canvas.Top="0" Width="1000" Height="1000" Source="{Binding LatestCanvasBitmap, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
+                    <Image Canvas.Left="0" Canvas.Top="0" Source="{Binding LatestCanvasBitmap, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
                 </Canvas>
             </paz:ZoomBorder>
         </Grid>

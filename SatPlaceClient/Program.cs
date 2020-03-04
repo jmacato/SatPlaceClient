@@ -1,6 +1,7 @@
 ﻿using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Dialogs;
 using Avalonia.Logging.Serilog;
 using Avalonia.ReactiveUI;
 
@@ -19,6 +20,7 @@ namespace SatPlaceClient
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
                 .LogToDebug()
-                .UseReactiveUI();
+                .UseReactiveUI()
+                .UseManagedSystemDialogs();
     }
 }

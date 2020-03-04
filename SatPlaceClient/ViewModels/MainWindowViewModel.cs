@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using ReactiveUI;
 using SocketIOClient;
 using SatPlaceClient.Models.Json;
-using System.Buffers;
 using SatPlaceClient.Models;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
@@ -31,14 +30,59 @@ namespace SatPlaceClient.ViewModels
             RefreshCanvasCommand = ReactiveCommand.CreateFromTask(DoRefreshCanvasAsync, CanRefreshCanvas);
 
             ReconnectCommand = ReactiveCommand.Create(DoReconnect);
+
+            this.WhenAnyValue(x => x.TargetImageFile)
+                .Where(x => x != null)
+                .Delay(TimeSpan.FromSeconds(0.1)) //Decouple from the dialog async thread
+                .Subscribe(ImageFileOpened);
+        }
+
+        private void ImageFileOpened(string path)
+        {
+            try
+            {
+                PNGFileProcessingInProgress = true;
+                DoImageProcessing(path);
+            }
+            catch (Exception e)
+            {
+                DisplayError(e.Message);
+            }
+            finally
+            {
+                PNGFileProcessingInProgress = false;
+            }
+        }
+
+        private void DisplayError(string errorMsg)
+        {
+            ErrorMessage = errorMsg;
+#pragma warning disable
+            TimeOutErrorMessage();
+#pragma warning restore
+        }
+
+        private async Task TimeOutErrorMessage()
+        {
+            await Task.Delay(TimeSpan.FromSeconds(8));
+            ErrorMessage = null;
+        }
+
+        private void DoImageProcessing(string path)
+        {
+            var target = BigGustave.Png.Open(path);
+
+            if (target.Width * target.Height > 250_000)
+                throw new Exception("Picture size exceeds the allowed dimensions. Make sure that the image only contains 250,000 pixels or is under 500x500.");
+        
         }
 
         private SocketIO SatPlaceClient { get; }
         private GenericPixel[] _latestCanvasBitmap;
-        private bool _connectionReady;
-        private bool _canvasRefreshInProgress;
-        private byte RetryCounter;
-        private bool _EnableReconnection;
+        private bool _connectionReady, _canvasRefreshInProgress, _enableReconnection, _pngFileProcessingInProgress;
+        private byte _retryCounter;
+        private string _targetImageFile, _errorMessage;
+        public uint MaximumReconnectionAttempt { get; } = 6;
 
         /// <summary>
         /// Stores the latest bitmap data of satoshis.place's canvas.
@@ -63,8 +107,26 @@ namespace SatPlaceClient.ViewModels
 
         public bool EnableReconnection
         {
-            get => _EnableReconnection;
-            private set => this.RaiseAndSetIfChanged(ref _EnableReconnection, value, nameof(EnableReconnection));
+            get => _enableReconnection;
+            private set => this.RaiseAndSetIfChanged(ref _enableReconnection, value, nameof(EnableReconnection));
+        }
+
+        public bool PNGFileProcessingInProgress
+        {
+            get => _pngFileProcessingInProgress;
+            private set => this.RaiseAndSetIfChanged(ref _pngFileProcessingInProgress, value, nameof(PNGFileProcessingInProgress));
+        }
+
+        public string TargetImageFile
+        {
+            get => _targetImageFile;
+            set => this.RaiseAndSetIfChanged(ref _targetImageFile, value, nameof(TargetImageFile));
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set => this.RaiseAndSetIfChanged(ref _errorMessage, value, nameof(ErrorMessage));
         }
 
         public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
@@ -75,14 +137,14 @@ namespace SatPlaceClient.ViewModels
             try
             {
                 await SatPlaceClient.ConnectAsync();
-                RetryCounter = 0;
+                _retryCounter = 0;
             }
             catch
             {
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, RetryCounter)));
-                RetryCounter++;
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, _retryCounter)));
+                _retryCounter++;
 
-                if (RetryCounter <= 2)
+                if (_retryCounter <= MaximumReconnectionAttempt)
                 {
                     DoTryConnecting();
                 }
@@ -142,7 +204,7 @@ namespace SatPlaceClient.ViewModels
         private void DoReconnect()
         {
             EnableReconnection = false;
-            RetryCounter = 0;
+            _retryCounter = 0;
             DoTryConnecting();
         }
 
@@ -154,6 +216,7 @@ namespace SatPlaceClient.ViewModels
 
         private void HandleBroadcastHeartbeat(ResponseArgs args)
         {
+            //var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text.Trim());
 
         }
 

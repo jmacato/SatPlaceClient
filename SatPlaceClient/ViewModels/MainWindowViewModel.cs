@@ -30,7 +30,7 @@ namespace SatPlaceClient.ViewModels
 
             RefreshCanvasCommand = ReactiveCommand.CreateFromTask(DoRefreshCanvasAsync, CanRefreshCanvas);
 
-            ReconnectCommand = ReactiveCommand.Create(DoTryConnecting);
+            ReconnectCommand = ReactiveCommand.Create(DoReconnect);
         }
 
         private SocketIO SatPlaceClient { get; }
@@ -97,25 +97,22 @@ namespace SatPlaceClient.ViewModels
             try
             {
                 await SatPlaceClient.ConnectAsync();
+                RetryCounter = 0;
             }
             catch
             {
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, RetryCounter)));
-                Console.WriteLine($"Connection Failed. Retry Count {RetryCounter}/6");
                 RetryCounter++;
 
-                if (RetryCounter <= 6)
+                if (RetryCounter <= 2)
                 {
                     DoTryConnecting();
                 }
                 else
                 {
-                    Console.WriteLine($"Connection Failed. Please restart app to try again.");
                     EnableReconnection = true;
                 }
             }
-
-            RetryCounter = 0;
         }
 
         private async Task DoRefreshCanvasAsync()
@@ -164,6 +161,13 @@ namespace SatPlaceClient.ViewModels
             };
         }
 
+        private void DoReconnect()
+        {
+            EnableReconnection = false;
+            RetryCounter = 0;
+            DoTryConnecting();
+        }
+        
         private void HandleGetSettingsResult(ResponseArgs args)
         {
             var raw1 = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);

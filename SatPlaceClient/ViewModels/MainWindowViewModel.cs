@@ -15,6 +15,7 @@ using System.Buffers;
 using System.Numerics;
 using SatPlaceClient.Extensions;
 using SatPlaceClient.ImageProcessing;
+using BigGustave;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -81,20 +82,21 @@ namespace SatPlaceClient.ViewModels
             if (targetPixelCount > 250_000)
                 throw new Exception("Picture size exceeds the allowed dimensions. Make sure that the image only contains 250,000 pixels or is under 500x500.");
 
-            var allColors = new List<GenericPixel>();
+            var allColors = new List<GenericColor>();
 
             int i = 0;
 
-            var background = GenericPixel.FromVector(Vector4.One);
+            var background = GenericColor.FromVector(Vector4.One);
 
 
-            // Tally all colors
+
+            // Tally all colors and flatten transparencies.
             for (int x = 0; x < target.Width; x++)
                 for (int y = 0; y < target.Height; y++)
                 {
                     var pngPixel = target.GetPixel(x, y);
-                    var blendedPixel = background.AlphaBlend(new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
-                    if (!allColors.Contains(blendedPixel, new GenericPixelComparer()))
+                    var blendedPixel = background.AlphaBlend(new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
+                    if (!allColors.Contains(blendedPixel, new GenericColorComparer()))
                     {
                         allColors.Add(blendedPixel);
                         i++;
@@ -117,11 +119,11 @@ namespace SatPlaceClient.ViewModels
                 allowedLabColors.Add(lab);
             }
 
-            // Use advanced CIEDE2000 color perception delta to get the closest color match
+            // Use CIEDE2000 color perception delta to get the closest color match
             // of the targeted color in the original image into the allowed color pallette.
 
             var delta2000 = new ImageProcessing.Comparisons.CieDe2000Comparison();
-            var colorReplacements = new Dictionary<GenericPixel, GenericPixel>();
+            var colorReplacements = new Dictionary<GenericColor, GenericColor>();
 
             foreach (var color in imageLabColors)
             {
@@ -130,17 +132,19 @@ namespace SatPlaceClient.ViewModels
 
                 var v1 = color.ToRgb();
                 var v2 = closestColorLab.match.ToRgb();
-                var targetColorRgb = new GenericPixel((byte)v1.R, (byte)v1.G, (byte)v1.B, byte.MaxValue);
-                var closestColorRgb = new GenericPixel((byte)v2.R, (byte)v2.G, (byte)v2.B, byte.MaxValue);
+                var targetColorRgb = new GenericColor((byte)v1.R, (byte)v1.G, (byte)v1.B, byte.MaxValue);
+                var closestColorRgb = new GenericColor((byte)v2.R, (byte)v2.G, (byte)v2.B, byte.MaxValue);
 
                 colorReplacements.TryAdd(targetColorRgb, closestColorRgb);
             }
 
-            
+            var k = PngBuilder.Create(target.Width, target.Height, false);
+
+
         }
 
         private SocketIO SatPlaceClient { get; }
-        private GenericPixel[] _latestCanvasBitmap;
+        private GenericBitmap _latestCanvasBitmap;
         private bool _connectionReady, _canvasRefreshInProgress, _enableReconnection, _pngFileProcessingInProgress;
         private byte _retryCounter;
         private string _targetImageFile, _errorMessage;
@@ -149,7 +153,7 @@ namespace SatPlaceClient.ViewModels
         /// <summary>
         /// Stores the latest bitmap data of satoshis.place's canvas.
         /// </summary>
-        public GenericPixel[] LatestCanvasBitmap
+        public GenericBitmap LatestCanvasBitmap
         {
             get => _latestCanvasBitmap;
             private set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
@@ -293,18 +297,18 @@ namespace SatPlaceClient.ViewModels
 
             var canvasPng = BigGustave.Png.Open(pngData);
 
-            var canvasBitmap = new GenericPixel[1000 * 1000];
+            var canvasBitmap = new GenericColor[canvasPng.Width * canvasPng.Height];
 
-            for (int x = 0; x < 1000; x++)
-                for (int y = 0; y < 1000; y++)
+            for (int y = 0; y < canvasPng.Height; y++)
+                for (int x = 0; x < canvasPng.Width; x++)
                 {
-                    var i = x + 1000 * y;
+                    var i = x + canvasPng.Width * y;
                     var pngPixel = canvasPng.GetPixel(x, y);
-                    var newPixel = new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A);
+                    var newPixel = new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A);
                     canvasBitmap[i] = newPixel;
                 }
 
-            LatestCanvasBitmap = canvasBitmap;
+            LatestCanvasBitmap = new GenericBitmap(canvasPng.Width, canvasPng.Height, canvasBitmap);
 
             CanvasRefreshInProgress = false;
         }

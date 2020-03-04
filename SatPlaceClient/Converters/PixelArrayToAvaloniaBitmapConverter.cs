@@ -12,21 +12,19 @@ namespace SatPlaceClient.Converters
 {
     public class PixelArrayToAvaloniaBitmapConverter : IValueConverter
     {
-        private const int TotalCanvasBytes = 1000 * 1000 * 4;
-
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is null) return null;
 
-            if (value is GenericPixel[] bitmap)
+            if (value is GenericBitmap bitmap)
             {
-                var newBitmap = new WriteableBitmap(new PixelSize(1000, 1000), Vector.One, PixelFormat.Bgra8888);
-
+                var newBitmap = new WriteableBitmap(new PixelSize(bitmap.Width, bitmap.Height), Vector.One, PixelFormat.Bgra8888);
                 using (var lockedBitmap = newBitmap.Lock())
                 {
                     unsafe
                     {
-                        fixed (void* src = &bitmap[0])
+                        var TotalCanvasBytes = bitmap.Width * bitmap.Height * sizeof(GenericColor);
+                        fixed (void* src = &bitmap.Colors[0])
                             Buffer.MemoryCopy(src, lockedBitmap.Address.ToPointer(), TotalCanvasBytes, TotalCanvasBytes);
                     }
                 }

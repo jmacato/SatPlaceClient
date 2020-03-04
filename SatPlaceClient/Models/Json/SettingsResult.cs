@@ -11,7 +11,7 @@ namespace SatPlaceClient.Models.Json
             OrderPixelsLimit = OrderPixelsLimit;
             PricePerPixel = PricePerPixel;
 
-            var genPixs = new GenericPixel[res.Colors.Length];
+            var genPixs = new GenericColor[res.Colors.Length];
 
             for (int i = 0; i < res.Colors.Length; i++)
             {
@@ -20,7 +20,7 @@ namespace SatPlaceClient.Models.Json
                 var G = Convert.ToByte(colorString[2..4], 16);
                 var B = Convert.ToByte(colorString[4..6], 16);
 
-                genPixs[i] = new GenericPixel(R, G, B, byte.MaxValue);
+                genPixs[i] = new GenericColor(R, G, B, byte.MaxValue);
             }
 
             Colors = genPixs;
@@ -28,7 +28,7 @@ namespace SatPlaceClient.Models.Json
 
 
         public uint BoardLength { get; set; }
-        public GenericPixel[] Colors { get; set; }
+        public GenericColor[] Colors { get; set; }
         public int InvoiceExpiry { get; set; }
         public int OrderPixelsLimit { get; set; }
         public int PricePerPixel { get; set; }

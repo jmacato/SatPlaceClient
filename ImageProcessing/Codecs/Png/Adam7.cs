@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     internal static class Adam7
     {
         /// <summary>

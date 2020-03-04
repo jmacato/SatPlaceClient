@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// Used to calculate the Adler-32 checksum used for ZLIB data in accordance with 
     /// RFC 1950: ZLIB Compressed Data Format Specification.

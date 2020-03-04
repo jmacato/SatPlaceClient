@@ -1,10 +1,10 @@
-﻿namespace BigGustave
-{
-    using System;
-    using System.IO;
-    using System.IO.Compression;
-    using System.Text;
+﻿using System;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     internal static class PngOpener
     {
         public static Png Open(Stream stream, IChunkVisitor chunkVisitor = null)

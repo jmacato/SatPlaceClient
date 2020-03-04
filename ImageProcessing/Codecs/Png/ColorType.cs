@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System;
+﻿using System;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// Describes the interpretation of the image data.
     /// </summary>

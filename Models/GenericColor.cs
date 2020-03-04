@@ -48,6 +48,31 @@ namespace SatPlaceClient.Models
             this.B = (byte)conv.B;
         }
 
+        public GenericColor(Vector3 rgba)
+        {
+            this.R = (byte)(rgba.X * byte.MaxValue);
+            this.G = (byte)(rgba.Y * byte.MaxValue);
+            this.B = (byte)(rgba.Z * byte.MaxValue);
+            this.A = byte.MaxValue;
+        }
+ 
+        public GenericColor(Vector4 rgba)
+        {
+            this.R = (byte)(rgba.X * byte.MaxValue);
+            this.G = (byte)(rgba.Y * byte.MaxValue);
+            this.B = (byte)(rgba.Z * byte.MaxValue);
+            this.A = (byte)(rgba.W * byte.MaxValue);
+        }
+ 
+        public Vector3 ToVector3()
+        {
+            var nR = (R / 255f);
+            var nG = (G / 255f);
+            var nB = (B / 255f);
+
+            return new Vector3(nR, nG, nB);
+        }
+
         public static GenericColor FromVector4(Vector4 rgba)
         {
             var nR = (byte)(rgba.X * byte.MaxValue);
@@ -65,6 +90,11 @@ namespace SatPlaceClient.Models
             var nA = (A / 255f);
 
             return new Vector4(nR, nG, nB, nA);
+        }
+
+        public Rgb ToRgb()
+        {
+            return new Rgb(R, G, B);
         }
 
         public GenericColor AlphaBlend(GenericColor ForegroundPixel)

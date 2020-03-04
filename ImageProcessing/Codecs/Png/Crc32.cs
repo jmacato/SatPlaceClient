@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// 32-bit Cyclic Redundancy Code used by the PNG for checking the data is intact.
     /// </summary>

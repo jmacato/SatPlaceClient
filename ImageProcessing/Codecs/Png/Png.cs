@@ -1,8 +1,8 @@
-﻿namespace BigGustave
-{
-    using System;
-    using System.IO;
+﻿using System;
+using System.IO;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// A PNG image. Call <see cref="Open(byte[],IChunkVisitor)"/> to open from file or bytes.
     /// </summary>

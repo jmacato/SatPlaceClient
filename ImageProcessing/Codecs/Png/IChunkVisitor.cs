@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System.IO;
+﻿using System.IO;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// Enables execution of custom logic whenever a chunk is read.
     /// </summary>

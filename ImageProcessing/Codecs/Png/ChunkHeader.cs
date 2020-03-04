@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System;
+﻿using System;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// The header for a data chunk in a PNG file.
     /// </summary>

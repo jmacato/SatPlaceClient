@@ -1,4 +1,4 @@
-﻿namespace BigGustave
+﻿namespace SatPlaceClient.ImageProcessing.Codecs.Png
 {
     internal readonly struct HeaderValidationResult
     {

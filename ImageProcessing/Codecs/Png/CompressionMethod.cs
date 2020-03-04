@@ -1,4 +1,4 @@
-﻿namespace BigGustave
+﻿namespace SatPlaceClient.ImageProcessing.Codecs.Png
 {
     /// <summary>
     /// The method used to compress the image data.

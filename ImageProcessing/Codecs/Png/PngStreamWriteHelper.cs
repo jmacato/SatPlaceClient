@@ -1,10 +1,10 @@
-﻿namespace BigGustave
-{
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     internal class PngStreamWriteHelper : Stream
     {
         private readonly Stream inner;

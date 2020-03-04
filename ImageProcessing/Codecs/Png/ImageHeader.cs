@@ -1,8 +1,8 @@
-﻿namespace BigGustave
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// The high level information about the image.
     /// </summary>

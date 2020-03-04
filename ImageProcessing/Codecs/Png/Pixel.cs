@@ -1,4 +1,4 @@
-﻿namespace BigGustave
+﻿namespace SatPlaceClient.ImageProcessing.Codecs.Png
 {
     /// <summary>
     /// A pixel in a <see cref="Png"/> image.

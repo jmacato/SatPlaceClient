@@ -1,4 +1,4 @@
-﻿namespace BigGustave
+﻿namespace SatPlaceClient.ImageProcessing.Codecs.Png
 {
     /// <summary>
     /// Indicates the transmission order of the image data.

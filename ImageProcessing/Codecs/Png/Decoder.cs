@@ -1,7 +1,7 @@
-﻿namespace BigGustave
-{
-    using System;
+﻿using System;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     internal static class Decoder
     {
         public static (byte bytesPerPixel, byte samplesPerPixel) GetBytesAndSamplesPerPixel(ImageHeader header)
@@ -85,7 +85,7 @@
                     throw new ArgumentOutOfRangeException($"Invalid interlace method: {header.InterlaceMethod}.");
             }
         }
-        
+
         private static byte SamplesPerPixel(ImageHeader header)
         {
             switch (header.ColorType)
@@ -158,7 +158,7 @@
                 data[byteAbsolute] += data[above];
                 return;
             }
-            
+
             if (type == FilterType.Sub)
             {
                 var leftIndex = rowByteIndex - bytesPerPixel;

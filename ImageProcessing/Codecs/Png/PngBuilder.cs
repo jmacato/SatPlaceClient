@@ -1,9 +1,9 @@
-﻿namespace BigGustave
-{
-    using System.IO;
-    using System.IO.Compression;
-    using System.Text;
+﻿using System.IO;
+using System.IO.Compression;
+using System.Text;
 
+namespace SatPlaceClient.ImageProcessing.Codecs.Png
+{
     /// <summary>
     /// Used to construct PNG images. Call <see cref="Create"/> to make a new builder.
     /// </summary>
@@ -62,7 +62,7 @@
 
             return this;
         }
-        
+
         /// <summary>
         /// Get the bytes of the PNG file for this builder.
         /// </summary>
@@ -138,7 +138,7 @@
                 var i = 0;
                 while ((streamValue = compressStream.ReadByte()) != -1)
                 {
-                    result[headerLength + i] = (byte) streamValue;
+                    result[headerLength + i] = (byte)streamValue;
                     i++;
                 }
 

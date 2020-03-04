@@ -11,11 +11,10 @@ using SatPlaceClient.Models;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 using SocketIOClient.Arguments;
-using System.Buffers;
 using System.Numerics;
 using SatPlaceClient.Extensions;
 using SatPlaceClient.ImageProcessing;
-using BigGustave;
+using SatPlaceClient.ImageProcessing.Codecs.Png;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -145,7 +144,7 @@ namespace SatPlaceClient.ViewModels
 
         private void DoImageProcessing(string path)
         {
-            var target = BigGustave.Png.Open(path);
+            var target = Png.Open(path);
             var tW = target.Width;
             var tH = target.Height;
             var totalPixelCount = tW * tH;
@@ -157,7 +156,7 @@ namespace SatPlaceClient.ViewModels
             var background = GenericColor.FromVector4(Vector4.One);
 
             var newTargetImage = new GenericBitmap(tW, tH, new GenericColor[totalPixelCount]);
-
+            var ditheringArray = new Vector3[totalPixelCount];
             var allowedPaletteLab = new List<Rgb>(OrderSettings.Colors.Length);
 
             foreach (var color in OrderSettings.Colors)
@@ -168,30 +167,74 @@ namespace SatPlaceClient.ViewModels
 
             var nearestColorCmp = new ImageProcessing.Comparisons.CieDe2000Comparison();
 
+            int CoordsToIndex(int x, int y) => x + tW * y;
+
             for (int y = 0; y < tH; y++)
                 for (int x = 0; x < tW; x++)
                 {
-                    var i = x + tW * y;
-
                     var pngPixel = target.GetPixel(x, y);
-
-                    // Blend pixel to opaque white.
                     var orig = new GenericColor(pngPixel.R, pngPixel.G, pngPixel.B, byte.MaxValue);
                     var blendedPixelRgb = background.AlphaBlend(orig);
 
-                    var blendedPixelLab = new Rgb(blendedPixelRgb.R, blendedPixelRgb.G, blendedPixelRgb.B);
+                    ditheringArray[CoordsToIndex(x, y)] = blendedPixelRgb.ToVector3();
+                }
+
+            for (int y = 0; y < tH; y++)
+                for (int x = 0; x < tW; x++)
+                {
+                    var oldpixel = ditheringArray[CoordsToIndex(x, y)];
 
                     // Use CIEDE2000 color perception delta to get the closest color match
-                    var closestColorLab = allowedPaletteLab.Select(match => (match, nearestColorCmp.Compare(blendedPixelLab, match))).MinBy(x => x.Item2);
+                    var newpixel = new GenericColor(allowedPaletteLab.Select(match =>
+                                                          (match,
+                                                           nearestColorCmp.Compare(new GenericColor(oldpixel).ToRgb(),
+                                                           match)))
+                                                          .MinBy(x => x.Item2)
+                                                          .match).ToVector3();
 
-                    var closestColorRgbX = closestColorLab.match.ToRgb();
 
-                    newTargetImage.Pixels[i] = new GenericColor(closestColorRgbX);
+                    newTargetImage.Pixels[CoordsToIndex(x, y)] = new GenericColor(newpixel);
+
+                    var quant_error = Vector3.Clamp(newpixel - oldpixel, Vector3.Zero, Vector3.One);
+
+                    // if (quant_error.Length() < 0 | quant_error.Length() > 0)
+                    // {
+
+                    // }
+
+                    var coord = CoordsToIndex(x + 1, y);
+
+                    if (coord >= 0 && coord < totalPixelCount)
+                    {
+                        ditheringArray[coord] += quant_error * (7f / 8f);
+                    }
+
+                    coord = CoordsToIndex(x - 1, y);
+
+                    if (coord >= 0 && coord < totalPixelCount)
+                    {
+                        ditheringArray[coord] += quant_error * (3f / 8f);
+                    }
+
+                    coord = CoordsToIndex(x, y + 1);
+
+                    if (coord >= 0 && coord < totalPixelCount)
+                    {
+                        ditheringArray[coord] += quant_error * (5f / 8f);
+                    }
+
+                    coord = CoordsToIndex(x + 1, y + 1);
+
+                    if (coord >= 0 && coord < totalPixelCount)
+                    {
+                        ditheringArray[coord] += quant_error * (1f / 8f);
+                    }
                 }
 
             LatestCanvasBitmap = newTargetImage;
         }
- 
+
+
         private async void DoTryConnecting()
         {
             try
@@ -288,7 +331,7 @@ namespace SatPlaceClient.ViewModels
 
             var pngData = Convert.FromBase64String(base64raw);
 
-            var canvasPng = BigGustave.Png.Open(pngData);
+            var canvasPng = Png.Open(pngData);
 
             var canvasBitmap = new GenericColor[canvasPng.Width * canvasPng.Height];
 

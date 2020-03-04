@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reactive.Disposables;
 using System.Runtime.InteropServices;
@@ -8,6 +9,22 @@ using ReactiveUI;
 
 namespace SatPlaceClient.Models
 {
+    public class GenericPixelComparer : IEqualityComparer<GenericPixel>
+    {
+        public bool Equals([AllowNull] GenericPixel x, [AllowNull] GenericPixel y)
+        {
+            return (x.A == y.A) &
+                   (x.R == y.R) &
+                   (x.G == y.G) &
+                   (x.B == y.B);
+        }
+
+        public int GetHashCode([DisallowNull] GenericPixel obj)
+        {
+            return int.MaxValue ^ obj.R ^ obj.G ^ obj.B ^ obj.A;
+        }
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public readonly struct GenericPixel
     {

@@ -13,6 +13,8 @@ using System.Reactive.Linq;
 using SocketIOClient.Arguments;
 using System.Buffers;
 using System.Numerics;
+using SatPlaceClient.Extensions;
+using SatPlaceClient.ImageProcessing;
 
 namespace SatPlaceClient.ViewModels
 {
@@ -80,35 +82,61 @@ namespace SatPlaceClient.ViewModels
                 throw new Exception("Picture size exceeds the allowed dimensions. Make sure that the image only contains 250,000 pixels or is under 500x500.");
 
             var allColors = new List<GenericPixel>();
-            
+
             int i = 0;
 
             var background = GenericPixel.FromVector(Vector4.One);
 
+
+            // Tally all colors
             for (int x = 0; x < target.Width; x++)
                 for (int y = 0; y < target.Height; y++)
                 {
                     var pngPixel = target.GetPixel(x, y);
                     var blendedPixel = background.AlphaBlend(new GenericPixel(pngPixel.R, pngPixel.G, pngPixel.B, pngPixel.A));
-                    if (!allColors.Contains(blendedPixel))
+                    if (!allColors.Contains(blendedPixel, new GenericPixelComparer()))
                     {
                         allColors.Add(blendedPixel);
                         i++;
                     }
                 }
 
+            var imageLabColors = new List<Lab>(allColors.Count);
+            var allowedLabColors = new List<Lab>(Settings.Colors.Length);
 
-            var imageLabColors = new List<Vector4>(allColors.Count);
-            var allowedLabColors = new List<Vector4>(allColors.Count);
-            
-            foreach(var color in allColors)
+            // Convert RGB colors to LAB for perceptually-accurate comparison later
+            foreach (var color in allColors)
             {
-                var k = ImageProcessing.ColorSpaceConversion.RGBToLab(color.ToVector());
-                imageLabColors.Add(k);
+                var lab = new Rgb(color.R, color.G, color.B).To<Lab>();
+                imageLabColors.Add(lab);
             }
 
+            foreach (var color in Settings.Colors)
+            {
+                var lab = new Rgb(color.R, color.G, color.B).To<Lab>();
+                allowedLabColors.Add(lab);
+            }
 
+            // Use advanced CIEDE2000 color perception delta to get the closest color match
+            // of the targeted color in the original image into the allowed color pallette.
 
+            var delta2000 = new ImageProcessing.Comparisons.CieDe2000Comparison();
+            var colorReplacements = new Dictionary<GenericPixel, GenericPixel>();
+
+            foreach (var color in imageLabColors)
+            {
+                var closestColorLab = allowedLabColors.Select(match => (match, delta2000.Compare(color, match)))
+                                                   .MinBy(x => x.Item2);
+
+                var v1 = color.ToRgb();
+                var v2 = closestColorLab.match.ToRgb();
+                var targetColorRgb = new GenericPixel((byte)v1.R, (byte)v1.G, (byte)v1.B, byte.MaxValue);
+                var closestColorRgb = new GenericPixel((byte)v2.R, (byte)v2.G, (byte)v2.B, byte.MaxValue);
+
+                colorReplacements.TryAdd(targetColorRgb, closestColorRgb);
+            }
+
+            
         }
 
         private SocketIO SatPlaceClient { get; }

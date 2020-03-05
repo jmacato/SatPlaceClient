@@ -1,7 +1,8 @@
-﻿using Newtonsoft.Json; 
+﻿using Newtonsoft.Json;
 
 namespace SatPlaceClient.Models.Json
 {
+
     public class CanvasPixel
     {
         [JsonProperty("coordinates")]

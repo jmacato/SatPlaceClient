@@ -69,40 +69,18 @@ namespace SatPlaceClient.ViewModels
                 .Subscribe(ImageFileOpened);
         }
 
-        private async void DoFinalizeOrder()
-        {
-            try
-            {
-                CurrentOrderStatus = OrderStatus.Uploading;
-                var data = CurrentOrder.ToOrderPixel();
-                await SatPlaceClient.EmitAsync("NEW_ORDER", data);
-            }
-            catch (Exception e)
-            {
-                DoDisplayError(e.Message);
-                DoCancelCurrentOrder();
-            }
-        }
-
-        private void DoCancelCurrentOrder()
-        {
-            CurrentOrderStatus = OrderStatus.Idle;
-            CurrentOrder = null;
-        }
-
-        private void DoOrderCurrentImage()
-        {
-            CurrentOrderStatus = OrderStatus.DetailReview;
-            CurrentOrder = new OrderDetail(TargetImage, new Vector2((float)TargetImageX, (float)TargetImageY), OrderSettings);
-        }
-
         private SocketIO SatPlaceClient { get; }
         private GenericBitmap _latestCanvasBitmap, _targetImage;
         private OrderSettingsResult _orderSettings;
+        private OrderStatus _currentOrderStatus;
+        private OrderDetail _currentOrder;
 
         private bool _connectionReady, _canvasRefreshInProgress, _enableReconnection, _pngFileProcessingInProgress;
+        private double _targetImageW, _targetImageH, _targetImageY, _targetImageX;
+
         private byte _retryCounter;
         private string _targetImageFilePath, _errorMessage;
+
         public uint MaximumReconnectionAttempt { get; } = 3;
 
         /// <summary>
@@ -153,34 +131,22 @@ namespace SatPlaceClient.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _pngFileProcessingInProgress, value, nameof(PNGFileProcessingInProgress));
         }
 
-        private ObservableAsPropertyHelper<bool> _addImageEnabled;
-        public bool AddImageEnabled => _addImageEnabled.Value;
-
-        private double _targetImageX;
-
         public double TargetImageX
         {
             get => _targetImageX;
             set => this.RaiseAndSetIfChanged(ref _targetImageX, value, nameof(TargetImageX));
         }
 
-        private double _targetImageY;
-
         public double TargetImageY
         {
             get => _targetImageY;
             set => this.RaiseAndSetIfChanged(ref _targetImageY, value, nameof(TargetImageY));
         }
-
-        private double _targetImageW;
-
         public double TargetImageW
         {
             get => _targetImageW;
             set => this.RaiseAndSetIfChanged(ref _targetImageW, value, nameof(TargetImageW));
         }
-
-        private double _targetImageH;
 
         public double TargetImageH
         {
@@ -206,9 +172,6 @@ namespace SatPlaceClient.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _orderSettings, value, nameof(OrderSettings));
         }
 
-        private OrderStatus _currentOrderStatus;
-        private OrderDetail _currentOrder;
-
         public OrderDetail CurrentOrder
         {
             get => _currentOrder;
@@ -228,6 +191,9 @@ namespace SatPlaceClient.ViewModels
         public ReactiveCommand<Unit, Unit> OrderCommand { get; }
         public ReactiveCommand<Unit, Unit> CancelOrderCommand { get; }
         public ReactiveCommand<Unit, Unit> ReviewDialogFinalizeCommand { get; }
+
+        private ObservableAsPropertyHelper<bool> _addImageEnabled;
+        public bool AddImageEnabled => _addImageEnabled.Value;
 
         private void ImageFileOpened(string path)
         {
@@ -320,7 +286,6 @@ namespace SatPlaceClient.ViewModels
             try
             {
                 await SatPlaceClient.ConnectAsync();
-
             }
             catch
             {
@@ -460,11 +425,38 @@ namespace SatPlaceClient.ViewModels
             CanvasRefreshInProgress = false;
         }
 
+        private async void DoFinalizeOrder()
+        {
+            try
+            {
+                CurrentOrderStatus = OrderStatus.Uploading;
+                var data = CurrentOrder.ToOrderPixel();
+                await SatPlaceClient.EmitAsync("NEW_ORDER", data);
+            }
+            catch (Exception e)
+            {
+                DoDisplayError(e.Message);
+                DoCancelCurrentOrder();
+            }
+        }
+
+        private void DoCancelCurrentOrder()
+        {
+            CurrentOrderStatus = OrderStatus.Idle;
+            CurrentOrder = null;
+        }
+
+        private void DoOrderCurrentImage()
+        {
+            CurrentOrderStatus = OrderStatus.DetailReview;
+            CurrentOrder = new OrderDetail(TargetImage, new Vector2((float)TargetImageX, (float)TargetImageY), OrderSettings);
+        }
+
         private void DisplayCanvasData(string b64raw)
         {
             var b1 = b64raw.Replace("data:image/bmp;base64,", string.Empty);
             var b2 = b1.Replace("data:image/png;base64,", string.Empty);
-            
+
             var pngData = Convert.FromBase64String(b2);
 
             var canvasPng = Png.Open(pngData);

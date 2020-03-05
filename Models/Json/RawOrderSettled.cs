@@ -2,10 +2,10 @@ using Newtonsoft.Json;
 
 namespace SatPlaceClient.Models.Json
 {
-    public class GenericPayloadResult
+    public class RawOrderSettled
     {
         [JsonProperty("data")]
-        public object Data { get; set; }
+        public OrderSettled Data { get; set; }
 
         [JsonProperty("error")]
         public string Error { get; set; }

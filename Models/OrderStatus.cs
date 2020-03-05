@@ -5,7 +5,7 @@ namespace SatPlaceClient.Models
         Idle,
         DetailReview,
         Uploading,
-        DisplayPayment,
+        DisplayInvoice,
         Confirmed
     }
 }

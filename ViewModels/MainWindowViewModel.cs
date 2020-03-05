@@ -23,7 +23,10 @@ namespace SatPlaceClient.ViewModels
     {
         public MainWindowViewModel()
         {
-            SatPlaceClient = new SocketIO("https://api.satoshis.place");
+            SatPlaceClient = new SocketIO("https://satoshis-place-api.koala.casa/")
+            {
+
+            };
 
             DoTryConnecting();
 
@@ -56,7 +59,7 @@ namespace SatPlaceClient.ViewModels
 
             OrderCommand = ReactiveCommand.Create(DoOrderCurrentImage, IsTargetImageActive);
 
-            ReviewDialogCancelCommand = ReactiveCommand.Create(DoCancelCurrentOrder);
+            CancelOrderCommand = ReactiveCommand.Create(DoCancelCurrentOrder);
 
             ReviewDialogFinalizeCommand = ReactiveCommand.Create(DoFinalizeOrder);
 
@@ -66,9 +69,19 @@ namespace SatPlaceClient.ViewModels
                 .Subscribe(ImageFileOpened);
         }
 
-        private void DoFinalizeOrder()
+        private async void DoFinalizeOrder()
         {
-            var data = CurrentOrder.ToOrderJsonString();
+            try
+            {
+                CurrentOrderStatus = OrderStatus.Uploading;
+                var data = CurrentOrder.ToOrderPixel();
+                await SatPlaceClient.EmitAsync("NEW_ORDER", data);
+            }
+            catch (Exception e)
+            {
+                DoDisplayError(e.Message);
+                DoCancelCurrentOrder();
+            }
         }
 
         private void DoCancelCurrentOrder()
@@ -213,7 +226,7 @@ namespace SatPlaceClient.ViewModels
         public ReactiveCommand<Unit, Unit> RemoveImageCommand { get; }
         public ReactiveCommand<Unit, Unit> CenterAlignCommand { get; }
         public ReactiveCommand<Unit, Unit> OrderCommand { get; }
-        public ReactiveCommand<Unit, Unit> ReviewDialogCancelCommand { get; }
+        public ReactiveCommand<Unit, Unit> CancelOrderCommand { get; }
         public ReactiveCommand<Unit, Unit> ReviewDialogFinalizeCommand { get; }
 
         private void ImageFileOpened(string path)
@@ -221,7 +234,7 @@ namespace SatPlaceClient.ViewModels
             try
             {
                 PNGFileProcessingInProgress = true;
-                DoImageProcessing(path);
+                DoAddImage(path);
             }
             catch (Exception e)
             {
@@ -266,7 +279,7 @@ namespace SatPlaceClient.ViewModels
             ErrorMessage = null;
         }
 
-        private void DoImageProcessing(string path)
+        private void DoAddImage(string path)
         {
             var target = Png.Open(path);
             var tW = target.Width;
@@ -301,7 +314,6 @@ namespace SatPlaceClient.ViewModels
 
             TargetImage = newTargetImage;
         }
-
 
         private async void DoTryConnecting()
         {
@@ -358,24 +370,67 @@ namespace SatPlaceClient.ViewModels
             {
                 ConnectionReady = false;
                 EnableReconnection = true;
+                DoCancelCurrentOrder();
             };
 
             SatPlaceClient.OnError += delegate
             {
                 ConnectionReady = false;
                 EnableReconnection = true;
+                DoCancelCurrentOrder();
                 DoTryConnecting();
             };
         }
 
         private void HandleOrderSettled(ResponseArgs args)
         {
-            //throw new NotImplementedException();
+            try
+            {
+                var response = JsonConvert.DeserializeObject<RawOrderSettled>(args.Text);
+
+                if (response.Error?.Length > 0)
+                {
+                    throw new Exception($"Order Settlement Failed: {response.Error}");
+                }
+
+                if (response.Data != null & CurrentOrderStatus == OrderStatus.DisplayInvoice)
+                {
+                    CurrentOrderStatus = OrderStatus.Confirmed;
+                    DisplayCanvasData(response.Data.Image);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                DoDisplayError(e.Message);
+                DoCancelCurrentOrder();
+            }
         }
 
         private void HandleNewOrderResult(ResponseArgs args)
         {
-            //throw new NotImplementedException();
+            try
+            {
+                var response = JsonConvert.DeserializeObject<RawNewOrder>(args.Text);
+
+                if (response.Error?.Length > 0)
+                {
+                    throw new Exception($"Order Failed: {response.Error}");
+                }
+
+                if (response.Data != null & CurrentOrderStatus == OrderStatus.Uploading)
+                {
+                    CurrentOrder.Invoice = response.Data.Invoice;
+                    CurrentOrderStatus = OrderStatus.DisplayInvoice;
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                DoDisplayError(e.Message);
+            }
+
+            DoCancelCurrentOrder();
         }
 
         private void DoReconnect()
@@ -387,23 +442,30 @@ namespace SatPlaceClient.ViewModels
 
         private void HandleGetSettingsResult(ResponseArgs args)
         {
-            var raw1 = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);
-            OrderSettings = new OrderSettingsResult(raw1.RawData);
+            var response = JsonConvert.DeserializeObject<GetSettingsPayloadResult>(args.Text);
+            OrderSettings = new OrderSettingsResult(response.RawData);
         }
 
         private void HandleBroadcastHeartbeat(ResponseArgs args)
         {
-            var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text.Trim());
-
+            var result = JsonConvert.DeserializeObject<GenericPayload>(args.Text);
         }
 
         private void HandleLatestCanvasData(ResponseArgs args)
         {
-            var result = JsonConvert.DeserializeObject<GenericPayloadResult>(args.Text);
+            var result = JsonConvert.DeserializeObject<GenericPayload>(args.Text);
 
-            var base64raw = (result.Data as string).Replace("data:image/bmp;base64,", string.Empty);
+            DisplayCanvasData(result.Data as string);
 
-            var pngData = Convert.FromBase64String(base64raw);
+            CanvasRefreshInProgress = false;
+        }
+
+        private void DisplayCanvasData(string b64raw)
+        {
+            var b1 = b64raw.Replace("data:image/bmp;base64,", string.Empty);
+            var b2 = b1.Replace("data:image/png;base64,", string.Empty);
+            
+            var pngData = Convert.FromBase64String(b2);
 
             var canvasPng = Png.Open(pngData);
 
@@ -419,8 +481,6 @@ namespace SatPlaceClient.ViewModels
                 }
 
             LatestCanvasBitmap = new GenericBitmap(canvasPng.Width, canvasPng.Height, canvasBitmap);
-
-            CanvasRefreshInProgress = false;
         }
     }
 }

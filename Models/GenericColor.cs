@@ -1,9 +1,5 @@
-﻿using System;
-using System.Numerics;
-using System.Reactive.Disposables;
+﻿using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
-using ReactiveUI;
 using SatPlaceClient.ImageProcessing;
 
 namespace SatPlaceClient.Models
@@ -55,7 +51,7 @@ namespace SatPlaceClient.Models
             this.B = (byte)(rgba.Z * byte.MaxValue);
             this.A = byte.MaxValue;
         }
- 
+
         public GenericColor(Vector4 rgba)
         {
             this.R = (byte)(rgba.X * byte.MaxValue);
@@ -63,7 +59,7 @@ namespace SatPlaceClient.Models
             this.B = (byte)(rgba.Z * byte.MaxValue);
             this.A = (byte)(rgba.W * byte.MaxValue);
         }
- 
+
         public Vector3 ToVector3()
         {
             var nR = (R / 255f);

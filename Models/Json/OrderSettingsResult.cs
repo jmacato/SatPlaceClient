@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 
 namespace SatPlaceClient.Models.Json
 {
@@ -6,7 +7,7 @@ namespace SatPlaceClient.Models.Json
     {
         public OrderSettingsResult(RawOrderSettingsResult res)
         {
-            BoardLength = res.BoardLength;
+            BoardDimensions = new Vector2(res.BoardLength, res.BoardLength);
             InvoiceExpiry = res.InvoiceExpiry;
             OrderPixelsLimit = res.OrderPixelsLimit;
             PricePerPixel = res.PricePerPixel;
@@ -27,7 +28,7 @@ namespace SatPlaceClient.Models.Json
         }
 
 
-        public uint BoardLength { get; set; }
+        public Vector2 BoardDimensions { get; set; }
         public GenericColor[] Colors { get; set; }
         public int InvoiceExpiry { get; set; }
         public int OrderPixelsLimit { get; set; }

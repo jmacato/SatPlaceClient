@@ -40,27 +40,23 @@ namespace SatPlaceClient.ViewModels
                                                            .ObserveOn(RxApp.MainThreadScheduler)
                                                            .ToProperty(this, x => x.AddImageEnabled);
 
-            var CanRemoveImage = this.WhenAnyValue(x => x.AddImageEnabled, x => x.TargetImage)
+            var IsTargetImageActive = this.WhenAnyValue(x => x.AddImageEnabled, x => x.TargetImage)
                                        .Select(x => !x.Item1 & x.Item2 != null)
                                        .ObserveOn(RxApp.MainThreadScheduler);
+
 
             RefreshCanvasCommand = ReactiveCommand.CreateFromTask(DoRefreshCanvasAsync, CanRefreshCanvas);
 
             ReconnectCommand = ReactiveCommand.Create(DoReconnect);
 
-            RemoveImageCommand = ReactiveCommand.Create(DoRemoveImage, CanRemoveImage);
+            RemoveImageCommand = ReactiveCommand.Create(DoRemoveImage, IsTargetImageActive);
+
+            CenterAlignCommand = ReactiveCommand.Create(DoCenterImage, IsTargetImageActive);
 
             this.WhenAnyValue(x => x.TargetImageFilePath)
                 .Where(x => x != null)
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Subscribe(ImageFileOpened);
-        }
-
-        private void DoRemoveImage()
-        {
-            TargetImage = null;
-            TargetImageX = 0;
-            TargetImageY = 0;
         }
 
         private SocketIO SatPlaceClient { get; }
@@ -120,7 +116,6 @@ namespace SatPlaceClient.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _pngFileProcessingInProgress, value, nameof(PNGFileProcessingInProgress));
         }
 
-
         private ObservableAsPropertyHelper<bool> _addImageEnabled;
         public bool AddImageEnabled => _addImageEnabled.Value;
 
@@ -138,6 +133,22 @@ namespace SatPlaceClient.ViewModels
         {
             get => _targetImageY;
             set => this.RaiseAndSetIfChanged(ref _targetImageY, value, nameof(TargetImageY));
+        }
+
+        private double _targetImageW;
+
+        public double TargetImageW
+        {
+            get => _targetImageW;
+            set => this.RaiseAndSetIfChanged(ref _targetImageW, value, nameof(TargetImageW));
+        }
+
+        private double _targetImageH;
+
+        public double TargetImageH
+        {
+            get => _targetImageH;
+            set => this.RaiseAndSetIfChanged(ref _targetImageH, value, nameof(TargetImageH));
         }
 
         public string TargetImageFilePath
@@ -161,6 +172,8 @@ namespace SatPlaceClient.ViewModels
         public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
         public ReactiveCommand<Unit, Unit> ReconnectCommand { get; }
         public ReactiveCommand<Unit, Unit> RemoveImageCommand { get; }
+        public ReactiveCommand<Unit, Unit> CenterAlignCommand { get; }
+        public ReactiveCommand<Unit, Unit> UploadCommand { get; }
 
         private void ImageFileOpened(string path)
         {
@@ -171,7 +184,8 @@ namespace SatPlaceClient.ViewModels
             }
             catch (Exception e)
             {
-                DisplayError(e.Message);
+                DoDisplayError(e.Message);
+                DoRemoveImage();
             }
             finally
             {
@@ -179,7 +193,25 @@ namespace SatPlaceClient.ViewModels
             }
         }
 
-        private void DisplayError(string errorMsg)
+        private void DoCenterImage()
+        {
+            var imageSize = new Vector2((float)TargetImageW, (float)TargetImageH);
+            var centerPos = (OrderSettings.BoardDimensions / 2) - (imageSize / 2);
+
+            TargetImageX = Math.Round(centerPos.X);
+            TargetImageY = Math.Round(centerPos.Y);
+        }
+
+        private void DoRemoveImage()
+        {
+            TargetImage = null;
+            TargetImageX = 0;
+            TargetImageY = 0;
+            TargetImageW = 0;
+            TargetImageH = 0;
+        }
+
+        private void DoDisplayError(string errorMsg)
         {
             ErrorMessage = errorMsg;
 #pragma warning disable
@@ -203,6 +235,9 @@ namespace SatPlaceClient.ViewModels
 
             if (totalPixelCount > OrderSettings.OrderPixelsLimit)
                 throw new Exception($"Picture size exceeds the allowed dimensions. Make sure that the image only contains {OrderSettings.OrderPixelsLimit:###,###,###} pixels or is under {limitAxis}x{limitAxis} pixels.");
+
+            TargetImageW = tW;
+            TargetImageH = tH;
 
             var background = GenericColor.FromVector4(Vector4.One);
 
@@ -236,7 +271,7 @@ namespace SatPlaceClient.ViewModels
             {
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, _retryCounter)));
                 _retryCounter++;
-                DisplayError($"Attempting to reconnect... ({_retryCounter}/{MaximumReconnectionAttempt})");
+                DoDisplayError($"Attempting to reconnect... ({_retryCounter}/{MaximumReconnectionAttempt})");
 
                 if (_retryCounter <= MaximumReconnectionAttempt)
                 {
@@ -244,7 +279,7 @@ namespace SatPlaceClient.ViewModels
                 }
                 else
                 {
-                    DisplayError($"Reconnection failed. Press the \"Reconnect\" button to try again.");
+                    DoDisplayError($"Reconnection failed. Press the \"Reconnect\" button to try again.");
                     EnableReconnection = true;
                 }
             }

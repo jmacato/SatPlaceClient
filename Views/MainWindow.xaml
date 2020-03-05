@@ -4,6 +4,7 @@
     xmlns:behaviors="clr-namespace:SatPlaceClient.Behaviors;assembly=SatPlaceClient" 
     xmlns:converters="clr-namespace:SatPlaceClient.Converters;assembly=SatPlaceClient" 
     xmlns:vm="clr-namespace:SatPlaceClient.ViewModels;assembly=SatPlaceClient" 
+    xmlns:local="clr-namespace:SatPlaceClient.Controls;assembly=SatPlaceClient" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:paz="clr-namespace:Avalonia.Controls.PanAndZoom;assembly=Avalonia.Controls.PanAndZoom" 
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" x:Class="SatPlaceClient.Views.MainWindow" Icon="/Assets/avalonia-logo.ico" UseLayoutRounding="True" FontFamily="/Assets/Fonts/*.ttf#Open Sans" Title="SatPlaceClient">
@@ -36,10 +37,13 @@
         </Style>
         <Style Selector="TextBox.OrderInvoiceBox">
             <Setter Property="IsReadOnly" Value="True"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>           
         </Style>
         <Style Selector="TextBox.OrderInvoiceBox:pointerover">
-            <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
         <Style Selector="Button.MetroButton TextBlock">
@@ -174,9 +178,12 @@
                     <Grid RowDefinitions="0.7*,2*,0.7*" IsVisible="{Binding CurrentOrderStatus, ConverterParameter=DisplayInvoice, Converter={StaticResource EnumToBooleanConverter}}">
                         <TextBlock Classes="FadedMetroHeader" Text="Awaiting Payment" Grid.RowSpan="3"/>
                         <Grid ColumnDefinitions="2*,6*,2*" VerticalAlignment="Center" Grid.RowSpan="3">
-                            <Grid Grid.Column="1" Grid.ColumnSpan="1">
-                                <TextBox Classes="OrderInvoiceBox MarginS TextS1" Text="{Binding CurrentOrder.Invoice}" />
-                            </Grid>
+                            <StackPanel Grid.Column="1" Grid.ColumnSpan="1">
+                                <Grid ColumnDefinitions="*,*">
+                                    <local:QrCode Grid.ColumnSpan="1" Data="{Binding CurrentOrder.Invoice}" />
+                                    <TextBox Grid.Column="1" Classes="OrderInvoiceBox MarginS TextS1" Text="{Binding CurrentOrder.Invoice}" />
+                                </Grid>
+                            </StackPanel>
                         </Grid>
                         <Grid Grid.Row="2" Grid.RowSpan="1">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Classes="MarginL" Spacing="15">
@@ -188,7 +195,7 @@
                     <Grid RowDefinitions="0.7*,2*,0.7*" IsVisible="{Binding CurrentOrderStatus, ConverterParameter=Confirmed, Converter={StaticResource EnumToBooleanConverter}}">
                         <TextBlock Classes="FadedMetroHeader" Text="Payment Confirmed!" Grid.RowSpan="3"/>
                         <Grid ColumnDefinitions="2*,6*,2*" VerticalAlignment="Center" Grid.RowSpan="3">
-                            <TextBlock Classes="MarginS TextM1" Text="Payment has been confirmed. Press the Finish button to exit." Grid.Column="1" Grid.ColumnSpan="1" />
+                            <TextBlock Classes="MarginS TextM1" Text="Payment has been confirmed. Press the Finish button to exit this dialog." Grid.Column="1" Grid.ColumnSpan="1" />
                         </Grid>
                         <Grid Grid.Row="2" Grid.RowSpan="1">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Classes="MarginL" Spacing="15">

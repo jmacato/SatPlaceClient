@@ -35,8 +35,9 @@ namespace SatPlaceClient.ViewModels
 
             _addImageEnabled = this.WhenAnyValue(x => x.CanvasRefreshInProgress,
                                                      x => x.ConnectionReady,
-                                                     x => x.TargetImage)
-                                                           .Select(x => !x.Item1 & x.Item2 & x.Item3 == null)
+                                                     x => x.TargetImage,
+                                                     x => x.PNGFileProcessingInProgress)
+                                                           .Select(x => !x.Item1 & x.Item2 & x.Item3 == null & !PNGFileProcessingInProgress)
                                                            .ObserveOn(RxApp.MainThreadScheduler)
                                                            .ToProperty(this, x => x.AddImageEnabled);
 
@@ -53,10 +54,33 @@ namespace SatPlaceClient.ViewModels
 
             CenterAlignCommand = ReactiveCommand.Create(DoCenterImage, IsTargetImageActive);
 
+            OrderCommand = ReactiveCommand.Create(DoOrderCurrentImage, IsTargetImageActive);
+
+            ReviewDialogCancelCommand = ReactiveCommand.Create(DoCancelCurrentOrder);
+
+            ReviewDialogFinalizeCommand = ReactiveCommand.Create(DoFinalizeOrder);
+
             this.WhenAnyValue(x => x.TargetImageFilePath)
                 .Where(x => x != null)
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Subscribe(ImageFileOpened);
+        }
+
+        private void DoFinalizeOrder()
+        {
+            var data = CurrentOrder.ToOrderJsonString();
+        }
+
+        private void DoCancelCurrentOrder()
+        {
+            CurrentOrderStatus = OrderStatus.Idle;
+            CurrentOrder = null;
+        }
+
+        private void DoOrderCurrentImage()
+        {
+            CurrentOrderStatus = OrderStatus.DetailReview;
+            CurrentOrder = new OrderDetail(TargetImage, new Vector2((float)TargetImageX, (float)TargetImageY), OrderSettings);
         }
 
         private SocketIO SatPlaceClient { get; }
@@ -169,11 +193,28 @@ namespace SatPlaceClient.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _orderSettings, value, nameof(OrderSettings));
         }
 
+        private OrderStatus _currentOrderStatus;
+        private OrderDetail _currentOrder;
+
+        public OrderDetail CurrentOrder
+        {
+            get => _currentOrder;
+            private set => this.RaiseAndSetIfChanged(ref _currentOrder, value, nameof(CurrentOrder));
+        }
+
+        public OrderStatus CurrentOrderStatus
+        {
+            get => _currentOrderStatus;
+            private set => this.RaiseAndSetIfChanged(ref _currentOrderStatus, value, nameof(CurrentOrderStatus));
+        }
+
         public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
         public ReactiveCommand<Unit, Unit> ReconnectCommand { get; }
         public ReactiveCommand<Unit, Unit> RemoveImageCommand { get; }
         public ReactiveCommand<Unit, Unit> CenterAlignCommand { get; }
-        public ReactiveCommand<Unit, Unit> UploadCommand { get; }
+        public ReactiveCommand<Unit, Unit> OrderCommand { get; }
+        public ReactiveCommand<Unit, Unit> ReviewDialogCancelCommand { get; }
+        public ReactiveCommand<Unit, Unit> ReviewDialogFinalizeCommand { get; }
 
         private void ImageFileOpened(string path)
         {
@@ -239,6 +280,8 @@ namespace SatPlaceClient.ViewModels
             TargetImageW = tW;
             TargetImageH = tH;
 
+            DoCenterImage();
+
             var background = GenericColor.FromVector4(Vector4.One);
 
             var newTargetImage = new GenericBitmap(tW, tH, new GenericColor[totalPixelCount]);
@@ -295,19 +338,12 @@ namespace SatPlaceClient.ViewModels
             }
         }
 
-        private async Task GetSettingsAsync()
-        {
-            if (ConnectionReady)
-            {
-                CanvasRefreshInProgress = true;
-                await SatPlaceClient.EmitAsync("GET_SETTINGS_RESULT", null);
-            }
-        }
-
         private void SetupHandlers()
         {
             SatPlaceClient.On("GET_LATEST_PIXELS_RESULT", HandleLatestCanvasData);
             SatPlaceClient.On("GET_SETTINGS_RESULT", HandleGetSettingsResult);
+            SatPlaceClient.On("NEW_ORDER_RESULT", HandleNewOrderResult);
+            SatPlaceClient.On("ORDER_SETTLED", HandleOrderSettled);
             SatPlaceClient.On("BROADCAST_STATS", HandleBroadcastHeartbeat);
 
             SatPlaceClient.OnConnected += async delegate
@@ -330,6 +366,16 @@ namespace SatPlaceClient.ViewModels
                 EnableReconnection = true;
                 DoTryConnecting();
             };
+        }
+
+        private void HandleOrderSettled(ResponseArgs args)
+        {
+            //throw new NotImplementedException();
+        }
+
+        private void HandleNewOrderResult(ResponseArgs args)
+        {
+            //throw new NotImplementedException();
         }
 
         private void DoReconnect()

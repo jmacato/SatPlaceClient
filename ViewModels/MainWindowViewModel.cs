@@ -33,24 +33,44 @@ namespace SatPlaceClient.ViewModels
                                        .Select(x => !x.Item1 & x.Item2)
                                        .ObserveOn(RxApp.MainThreadScheduler);
 
+            _addImageEnabled = this.WhenAnyValue(x => x.CanvasRefreshInProgress,
+                                                     x => x.ConnectionReady,
+                                                     x => x.TargetImage)
+                                                           .Select(x => !x.Item1 & x.Item2 & x.Item3 == null)
+                                                           .ObserveOn(RxApp.MainThreadScheduler)
+                                                           .ToProperty(this, x => x.AddImageEnabled);
+
+            var CanRemoveImage = this.WhenAnyValue(x => x.AddImageEnabled, x => x.TargetImage)
+                                       .Select(x => !x.Item1 & x.Item2 != null)
+                                       .ObserveOn(RxApp.MainThreadScheduler);
+
             RefreshCanvasCommand = ReactiveCommand.CreateFromTask(DoRefreshCanvasAsync, CanRefreshCanvas);
 
             ReconnectCommand = ReactiveCommand.Create(DoReconnect);
 
-            this.WhenAnyValue(x => x.TargetImageFile)
+            RemoveImageCommand = ReactiveCommand.Create(DoRemoveImage, CanRemoveImage);
+
+            this.WhenAnyValue(x => x.TargetImageFilePath)
                 .Where(x => x != null)
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Subscribe(ImageFileOpened);
         }
 
+        private void DoRemoveImage()
+        {
+            TargetImage = null;
+            TargetImageX = 0;
+            TargetImageY = 0;
+        }
+
         private SocketIO SatPlaceClient { get; }
-        private GenericBitmap _latestCanvasBitmap;
+        private GenericBitmap _latestCanvasBitmap, _targetImage;
         private OrderSettingsResult _orderSettings;
 
         private bool _connectionReady, _canvasRefreshInProgress, _enableReconnection, _pngFileProcessingInProgress;
         private byte _retryCounter;
-        private string _targetImageFile, _errorMessage;
-        public uint MaximumReconnectionAttempt { get; } = 6;
+        private string _targetImageFilePath, _errorMessage;
+        public uint MaximumReconnectionAttempt { get; } = 3;
 
         /// <summary>
         /// Stores the latest bitmap data of satoshis.place's canvas.
@@ -59,6 +79,15 @@ namespace SatPlaceClient.ViewModels
         {
             get => _latestCanvasBitmap;
             private set => this.RaiseAndSetIfChanged(ref _latestCanvasBitmap, value, nameof(LatestCanvasBitmap));
+        }
+
+        /// <summary>
+        /// Stores the bitmap data of the target image to upload.
+        /// </summary>
+        public GenericBitmap TargetImage
+        {
+            get => _targetImage;
+            private set => this.RaiseAndSetIfChanged(ref _targetImage, value, nameof(TargetImage));
         }
 
         /// <summary>
@@ -91,10 +120,30 @@ namespace SatPlaceClient.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _pngFileProcessingInProgress, value, nameof(PNGFileProcessingInProgress));
         }
 
-        public string TargetImageFile
+
+        private ObservableAsPropertyHelper<bool> _addImageEnabled;
+        public bool AddImageEnabled => _addImageEnabled.Value;
+
+        private double _targetImageX;
+
+        public double TargetImageX
         {
-            get => _targetImageFile;
-            set => this.RaiseAndSetIfChanged(ref _targetImageFile, value, nameof(TargetImageFile));
+            get => _targetImageX;
+            set => this.RaiseAndSetIfChanged(ref _targetImageX, value, nameof(TargetImageX));
+        }
+
+        private double _targetImageY;
+
+        public double TargetImageY
+        {
+            get => _targetImageY;
+            set => this.RaiseAndSetIfChanged(ref _targetImageY, value, nameof(TargetImageY));
+        }
+
+        public string TargetImageFilePath
+        {
+            get => _targetImageFilePath;
+            set => this.RaiseAndSetIfChanged(ref _targetImageFilePath, value, nameof(TargetImageFilePath));
         }
 
         public string ErrorMessage
@@ -111,6 +160,7 @@ namespace SatPlaceClient.ViewModels
 
         public ReactiveCommand<Unit, Unit> RefreshCanvasCommand { get; }
         public ReactiveCommand<Unit, Unit> ReconnectCommand { get; }
+        public ReactiveCommand<Unit, Unit> RemoveImageCommand { get; }
 
         private void ImageFileOpened(string path)
         {
@@ -171,7 +221,7 @@ namespace SatPlaceClient.ViewModels
 
             newDither.Dither(tW, tH, ref newTargetImage.Pixels, OrderSettings.Colors);
 
-            LatestCanvasBitmap = newTargetImage;
+            TargetImage = newTargetImage;
         }
 
 
@@ -180,12 +230,13 @@ namespace SatPlaceClient.ViewModels
             try
             {
                 await SatPlaceClient.ConnectAsync();
-                _retryCounter = 0;
+
             }
             catch
             {
                 await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, _retryCounter)));
                 _retryCounter++;
+                DisplayError($"Attempting to reconnect... ({_retryCounter}/{MaximumReconnectionAttempt})");
 
                 if (_retryCounter <= MaximumReconnectionAttempt)
                 {
@@ -193,6 +244,7 @@ namespace SatPlaceClient.ViewModels
                 }
                 else
                 {
+                    DisplayError($"Reconnection failed. Press the \"Reconnect\" button to try again.");
                     EnableReconnection = true;
                 }
             }
@@ -228,6 +280,7 @@ namespace SatPlaceClient.ViewModels
                 ConnectionReady = true;
                 await DoRefreshCanvasAsync();
                 EnableReconnection = false;
+                _retryCounter = 0;
             };
 
             SatPlaceClient.OnClosed += delegate

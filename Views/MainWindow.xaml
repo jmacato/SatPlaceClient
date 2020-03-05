@@ -23,19 +23,27 @@
                 </Border>
                 <Button Content="Reconnect" Command="{Binding ReconnectCommand}" IsVisible="{Binding EnableReconnection}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Content="Refresh Canvas" Command="{Binding RefreshCanvasCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button Content="Upload Image" IsEnabled="{Binding OrderSettings, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Button Content="Add Image" IsEnabled="{Binding AddImageEnabled}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <i:Interaction.Behaviors>
-                        <behaviors:OpenDialogSingleFileOutBehavior TargetFilePath="{Binding TargetImageFile}" />
+                        <behaviors:OpenDialogSingleFileOutBehavior TargetFilePath="{Binding TargetImageFilePath}" />
                     </i:Interaction.Behaviors>
                 </Button>
+                <Button Content="Remove Image" Command="{Binding RemoveImageCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </StackPanel>
-            <paz:ZoomBorder Name="zoomBorder" Stretch="None" ZoomSpeed="1.2" Background="SlateBlue" ClipToBounds="True" Focusable="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="1">
+            <paz:ZoomBorder RenderOptions.BitmapInterpolationMode="Default" Stretch="None" ZoomSpeed="1.2" Background="SlateBlue" ClipToBounds="True" Focusable="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="1">
                 <i:Interaction.Behaviors>
                     <behaviors:PanAndZoomBehavior />
                 </i:Interaction.Behaviors>
-                <Canvas Background="LightGray" Width="1000" Height="1000" RenderOptions.BitmapInterpolationMode="Default">
-                    <Image Canvas.Left="0" Canvas.Top="0" Source="{Binding LatestCanvasBitmap, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
-                </Canvas>
+                <Border Width="1020" Height="1020" BorderBrush="Gray" Background="White" BorderThickness="10">
+                    <Canvas Width="1000" Height="1000" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Image Canvas.Left="0" Canvas.Top="0" Source="{Binding LatestCanvasBitmap, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
+                        <Image Canvas.Left="{Binding TargetImageX, Mode=TwoWay}" Canvas.Top="{Binding TargetImageY, Mode=TwoWay}" IsEnabled="{Binding TargetImage, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}" Source="{Binding TargetImage, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}">
+                            <i:Interaction.Behaviors>
+                                <behaviors:CanvasDraggableBehavior />
+                            </i:Interaction.Behaviors>
+                        </Image>
+                    </Canvas>
+                </Border>
             </paz:ZoomBorder>
         </Grid>
         <StackPanel Orientation="Horizontal" Background="#FFCC00" Spacing="10" Grid.Row="1" IsVisible="{Binding ErrorMessage, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}">

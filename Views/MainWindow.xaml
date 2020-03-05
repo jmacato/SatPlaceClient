@@ -6,7 +6,15 @@
     xmlns:vm="clr-namespace:SatPlaceClient.ViewModels;assembly=SatPlaceClient" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:paz="clr-namespace:Avalonia.Controls.PanAndZoom;assembly=Avalonia.Controls.PanAndZoom" 
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" x:Class="SatPlaceClient.Views.MainWindow" Icon="/Assets/avalonia-logo.ico" UseLayoutRounding="True" Title="SatPlaceClient">
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    mc:Ignorable="d" 
+    d:DesignWidth="800" 
+    d:DesignHeight="450"
+    x:Class="SatPlaceClient.Views.MainWindow" 
+    Icon="/Assets/avalonia-logo.ico" 
+    UseLayoutRounding="True"
+    FontFamily="/Assets/Fonts/*.ttf#Open Sans"
+    Title="SatPlaceClient">
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
@@ -14,23 +22,24 @@
         <converters:BooleanColorizerConverter x:Key="BooleanColorizerConverter" />
         <converters:PixelArrayToAvaloniaBitmapConverter x:Key="PixelArrayToAvaloniaBitmapConverter" />
         <converters:NullToBooleanConverter x:Key="NullToBooleanConverter" />
+        <converters:BooleanToTextConverter x:Key="BooleanToTextConverter" />
     </Window.Resources>
     <Grid>
         <Grid RowDefinitions="*,Auto">
             <Grid RowDefinitions="Auto,*">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" Grid.Row="0" Margin="5">
-                    <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Width="24" Height="24" Margin="10" ToolTip.Tip="Connection Status">
+                    <Border BorderBrush="Gray" BorderThickness="1" Background="Black" Width="28" Height="28" Margin="10" ToolTip.Tip="{Binding ConnectionReady, ConverterParameter=Connected:Disconnected, Converter={StaticResource BooleanToTextConverter}}">
                         <Ellipse Fill="{Binding ConnectionReady, ConverterParameter=Crimson:Lime, Converter={StaticResource BooleanColorizerConverter}}" Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
-                    <Button Content="Reconnect" Command="{Binding ReconnectCommand}" IsVisible="{Binding EnableReconnection}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button Content="Refresh Canvas" Command="{Binding RefreshCanvasCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button Content="Add Image" IsEnabled="{Binding AddImageEnabled}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Content="Reconnect" Command="{Binding ReconnectCommand}" IsVisible="{Binding EnableReconnection}" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Content="Refresh" Command="{Binding RefreshCanvasCommand}" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Content="Add Image" IsEnabled="{Binding AddImageEnabled}" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <i:Interaction.Behaviors>
                             <behaviors:OpenDialogSingleFileOutBehavior TargetFilePath="{Binding TargetImageFilePath}" />
                         </i:Interaction.Behaviors>
                     </Button>
-                    <Button Content="Remove Image" Command="{Binding RemoveImageCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button Content="Center Align" Command="{Binding CenterAlignCommand}" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Content="Remove Image" Command="{Binding RemoveImageCommand}" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Content="Center Align" Command="{Binding CenterAlignCommand}" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </StackPanel>
                 <paz:ZoomBorder RenderOptions.BitmapInterpolationMode="Default" Stretch="None" ZoomSpeed="1.2" Background="SlateBlue" ClipToBounds="True" Focusable="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="1">
                     <i:Interaction.Behaviors>
@@ -55,6 +64,12 @@
             <StackPanel Orientation="Horizontal" Background="#FFCC00" Spacing="10" Grid.Row="1" IsVisible="{Binding ErrorMessage, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}">
                 <TextBlock Text="{Binding ErrorMessage}" FontWeight="Bold" Foreground="#E51400" Margin="5"/>
             </StackPanel>
+        </Grid>
+        <!-- Confirmation and payment dialog overlay-->
+        <Grid Background="#AA000000" RowDefinitions="0.5*,5*,0.5*" IsVisible="False">
+            <Border Background="White" Grid.Row="1" Grid.RowSpan="1">
+                
+            </Border>
         </Grid>
     </Grid>
 </Window>

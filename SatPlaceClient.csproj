@@ -22,7 +22,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="*"/>
     <PackageReference Include="ReactiveUI" Version="*" />
     <PackageReference Include="QRCoder" Version="*"/>
-    <PackageReference Include="SocketIOClient" Version="*"/>
     <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="*"/>
     <PackageReference Include="Avalonia.Xaml.Behaviors" Version="*"/>
   </ItemGroup>

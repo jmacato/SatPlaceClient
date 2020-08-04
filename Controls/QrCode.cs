@@ -15,17 +15,20 @@ namespace SatPlaceClient.Controls
         private Size CoercedSize { get; set; }
         private double GridCellFactor { get; set; }
         private bool[,] FinalMatrix { get; set; }
-		private IBrush SemiTransparentWhite = new SolidColorBrush(Colors.White, 0.5f).ToImmutable(); 
+        private IBrush SemiTransparentWhite = new SolidColorBrush(Colors.White, 0.5f).ToImmutable();
+        public static readonly DirectProperty<QrCode, string> DataProperty =
+       AvaloniaProperty.RegisterDirect<QrCode, string>(
+           nameof(Data),
+           o => o.Data,
+           (o, v) => o.Data = v);
 
-        public static readonly AvaloniaProperty<string> DataProperty =
-            AvaloniaProperty.Register<QrCode, string>(nameof(Data), defaultBindingMode: BindingMode.TwoWay);
+        private string _Data;
 
         public string Data
         {
-            get => GetValue(DataProperty);
-            set => SetValue(DataProperty, value);
+            get { return _Data; }
+            set { SetAndRaise(DataProperty, ref _Data, value); }
         }
-
         static QrCode()
         {
             AffectsMeasure<QrCode>(DataProperty);
@@ -44,19 +47,19 @@ namespace SatPlaceClient.Controls
         private void DataToMatrix(string obj)
         {
             var qrGenerator = new QRCodeGenerator();
-            var qrCodeData = qrGenerator.CreateQrCode(Data, QRCodeGenerator.ECCLevel.Q);
-			var srcMatrix = qrCodeData.ModuleMatrix;
+            var qrCodeData = qrGenerator.CreateQrCode("BC1QD6H6VP99QWSTK3Z668MD42Q0ZC44VPWKK824ZH", QRCodeGenerator.ECCLevel.L);
+            var srcMatrix = qrCodeData.ModuleMatrix;
             var qrDims = srcMatrix.Count;
-            
-			bool[,] tempMatrix = new bool[qrDims, qrDims];
+
+            bool[,] tempMatrix = new bool[qrDims, qrDims];
 
             for (int y = 0; y < qrDims; y++)
                 for (int x = 0; x < qrDims; x++)
                 {
-					tempMatrix[x,y] = srcMatrix[x][y]; 
+                    tempMatrix[x, y] = srcMatrix[x][y];
                 }
 
-			FinalMatrix = AddPaddingToMatrix(tempMatrix);
+            FinalMatrix = AddPaddingToMatrix(tempMatrix);
         }
 
         private bool[,] AddPaddingToMatrix(bool[,] matrix)

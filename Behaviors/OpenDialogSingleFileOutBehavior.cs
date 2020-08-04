@@ -12,24 +12,33 @@ namespace SatPlaceClient.Behaviors
 {
     public class OpenDialogSingleFileOutBehavior : Behavior<Button>
     {
-        public static readonly AvaloniaProperty<string> TargetFilePathProperty =
-            AvaloniaProperty.Register<OpenDialogSingleFileOutBehavior, string>(nameof(TargetFilePath), defaultBindingMode: BindingMode.TwoWay);
+        public static readonly DirectProperty<OpenDialogSingleFileOutBehavior, string> TargetFilePathProperty =
+       AvaloniaProperty.RegisterDirect<OpenDialogSingleFileOutBehavior, string>(
+           nameof(TargetFilePath),
+           o => o.TargetFilePath,
+           (o, v) => o.TargetFilePath = v);
+
+        private string _TargetFilePath;
 
         public string TargetFilePath
         {
-            get => GetValue(TargetFilePathProperty);
-            set => SetValue(TargetFilePathProperty, value);
+            get { return _TargetFilePath; }
+            set { SetAndRaise(TargetFilePathProperty, ref _TargetFilePath, value); }
         }
 
-        public static readonly AvaloniaProperty<string> DialogTitleProperty =
-            AvaloniaProperty.Register<OpenDialogSingleFileOutBehavior, string>(nameof(DialogTitle));
+        public static readonly DirectProperty<OpenDialogSingleFileOutBehavior, string> DialogTitleProperty =
+       AvaloniaProperty.RegisterDirect<OpenDialogSingleFileOutBehavior, string>(
+           nameof(DialogTitle),
+           o => o.DialogTitle,
+           (o, v) => o.DialogTitle = v);
+
+        private string _DialogTitle;
 
         public string DialogTitle
         {
-            get => GetValue(DialogTitleProperty);
-            set => SetValue(DialogTitleProperty, value);
+            get { return _DialogTitle; }
+            set { SetAndRaise(DialogTitleProperty, ref _DialogTitle, value); }
         }
-
         protected override void OnAttached()
         {
             base.OnAttached();

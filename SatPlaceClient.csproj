@@ -15,14 +15,27 @@
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaResource Include="Assets\Fonts\*" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <AvaloniaVersion>0.10.0-preview2</AvaloniaVersion>
+    <AvaloniaBehaviorsVersion>0.10.0-preview2</AvaloniaBehaviorsVersion>
+    <PanAndZoomVersion>3.0.0-preview2</PanAndZoomVersion>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.9.*" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.9.*" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.*" />
+    <PackageReference Include="Avalonia.Xaml.Interactions" Version="$(AvaloniaBehaviorsVersion)" />
+    <PackageReference Include="Avalonia.MatrixExtensions" Version="$(PanAndZoomVersion)" />
+    <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="$(PanAndZoomVersion)" />
+    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="*"/>
     <PackageReference Include="ReactiveUI" Version="*" />
     <PackageReference Include="QRCoder" Version="*"/>
-    <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="*"/>
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="*"/>
   </ItemGroup>
 </Project>

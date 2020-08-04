@@ -1,8 +1,7 @@
 ﻿using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Dialogs;
-using Avalonia.Logging.Serilog;
+using Avalonia.Dialogs; 
 using Avalonia.ReactiveUI;
 
 namespace SatPlaceClient

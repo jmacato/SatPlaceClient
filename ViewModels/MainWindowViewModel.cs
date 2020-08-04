@@ -23,7 +23,7 @@ namespace SatPlaceClient.ViewModels
     {
         public MainWindowViewModel()
         {
-            SatPlaceClient = new SocketIO("https://satoshis-place-api.koala.casa")
+            SatPlaceClient = new SocketIO("https://api.satoshis.place")
             {
                 ConnectTimeout = TimeSpan.FromMinutes(5)
             };

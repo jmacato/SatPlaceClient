@@ -87,6 +87,9 @@
         <converters:BooleanToTextConverter x:Key="BooleanToTextConverter" />
         <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
         <converters:PixelArrayToAvaloniaBitmapConverter x:Key="PixelArrayToAvaloniaBitmapConverter" />
+        <converters:PixelArrayToImageBrushConverter x:Key="PixelArrayToImageBrushConverter" />
+
+        
     </Window.Resources>
     <Grid>
         <Grid RowDefinitions="*,Auto">
@@ -113,15 +116,15 @@
                     <Border Width="1020" Height="1020" BorderBrush="Gray" BorderThickness="10" IsEnabled="{Binding LatestCanvasBitmap, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}">
                         <Canvas Width="1000" Height="1000" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <Image Canvas.Left="0" Canvas.Top="0" Source="{Binding LatestCanvasBitmap, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
-                            <Grid Canvas.Left="{Binding TargetImageX, Mode=TwoWay}" Canvas.Top="{Binding TargetImageY, Mode=TwoWay}">
+                            <Panel Background="{Binding TargetImage, Converter={StaticResource PixelArrayToImageBrushConverter}}" Canvas.Left="{Binding TargetImageX, Mode=TwoWay}" Canvas.Top="{Binding TargetImageY, Mode=TwoWay}" Width="{Binding TargetImageW}" Height="{Binding TargetImageH}">
                                 <i:Interaction.Behaviors>
                                     <behaviors:CanvasDraggableBehavior />
                                 </i:Interaction.Behaviors>
-                                <Grid Background="White" IsVisible="{Binding PNGFileProcessingInProgress}" Width="{Binding TargetImageW}" Height="{Binding TargetImageH}">
+                                <Panel Background="White" IsVisible="{Binding PNGFileProcessingInProgress}" >
                                     <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Text="Processing Image..."/>
-                                </Grid>
-                                <Image IsEnabled="{Binding TargetImage, ConverterParameter=Invert, Converter={StaticResource NullToBooleanConverter}}" Source="{Binding TargetImage, Converter={StaticResource PixelArrayToAvaloniaBitmapConverter}}"/>
-                            </Grid>
+                                </Panel>
+                              
+                            </Panel>
                         </Canvas>
                     </Border>
                 </paz:ZoomBorder>

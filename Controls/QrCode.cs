@@ -44,10 +44,10 @@ namespace SatPlaceClient.Controls
                 .Subscribe(DataToMatrix);
         }
 
-        private void DataToMatrix(string obj)
+        private void DataToMatrix(string dataStr)
         {
             var qrGenerator = new QRCodeGenerator();
-            var qrCodeData = qrGenerator.CreateQrCode("BC1QD6H6VP99QWSTK3Z668MD42Q0ZC44VPWKK824ZH", QRCodeGenerator.ECCLevel.L);
+            var qrCodeData = qrGenerator.CreateQrCode(dataStr, QRCodeGenerator.ECCLevel.L);
             var srcMatrix = qrCodeData.ModuleMatrix;
             var qrDims = srcMatrix.Count;
 

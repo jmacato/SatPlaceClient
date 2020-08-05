@@ -23,14 +23,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Xaml.Interactions" Version="$(AvaloniaBehaviorsVersion)" />
-    <PackageReference Include="Avalonia.MatrixExtensions" Version="$(PanAndZoomVersion)" />
-    <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="$(PanAndZoomVersion)" />
     <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+
+    <PackageReference Include="Avalonia.Xaml.Interactions" Version="$(AvaloniaBehaviorsVersion)" />
+    <PackageReference Include="Avalonia.Controls.PanAndZoom" Version="$(PanAndZoomVersion)" />
   </ItemGroup>
 
   <ItemGroup>

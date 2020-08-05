@@ -99,7 +99,7 @@
                     <Button Content="Refresh" Command="{Binding RefreshCanvasCommand}" Classes="ToolbarButtons"/>
                     <Button Content="Add Image" IsEnabled="{Binding AddImageEnabled}" Classes="ToolbarButtons">
                         <i:Interaction.Behaviors>
-                            <behaviors:OpenDialogSingleFileOutBehavior TargetFilePath="{Binding TargetImageFilePath}" />
+                            <behaviors:OpenDialogSingleFileOutBehavior DialogTitle="Select image to upload (PNG)" TargetFilePath="{Binding TargetImageFilePath, Mode=TwoWay}" />
                         </i:Interaction.Behaviors>
                     </Button>
                     <Button Content="Remove Image" Command="{Binding RemoveImageCommand}" Classes="ToolbarButtons"/>
